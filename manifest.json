@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "CSES Pacha Tools – Ordenar y Filtrar",
+  "description": "Añade controles para ordenar por # de resueltos, ocultar resueltos y ver tópico en CSES.",
+  "version": "1.1.1",
+  "icons": { "128": "icons/icon128.png" },
+  "content_scripts": [
+    {
+      "matches": ["https://cses.fi/problemset*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
