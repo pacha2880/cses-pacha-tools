@@ -28,18 +28,21 @@ Normal flow, one command:
 npm run ship -- "commit message"
 ```
 
-It bumps the patch version, validates, commits everything and pushes. When that push lands on `main`, the [Release workflow](.github/workflows/release.yml) uploads and publishes the new version and tags it `v<version>`. Uploading takes seconds; Google's review of each version (hours to days) cannot be skipped.
+It bumps the patch version, validates, commits everything and pushes. When that push lands on `main`, the [Release workflow](.github/workflows/release.yml) uploads the new version, submits it for review and tags it `v<version>`. Google's review (hours to days) cannot be skipped.
 
-By hand instead:
+**One review at a time.** If a version is still in review, the release is deferred instead of cancelling it (cancelling restarts the queue). The workflow also runs every 6 hours and submits the latest untagged version once the review is over, so several quick ships end up as one review. To replace a version in review anyway (urgent fix): Actions → Release → Run workflow → "cancel pending".
 
-- `npm run pack` → creates `dist/cses-pacha-tools-v<version>.zip`; upload it in the [Developer Dashboard](https://chrome.google.com/webstore/devconsole).
-- `npm run release` → packs, uploads and publishes from your machine (bump `version` first).
+By hand:
 
-### One-time setup
+- `npm run status` → what is published and what is in review.
+- `npm run pack` → creates `dist/cses-pacha-tools-v<version>.zip` for a manual upload in the [Developer Dashboard](https://chrome.google.com/webstore/devconsole).
+- `npm run release` → packs, uploads and submits from your machine (same deferral rule; `-- --cancel-pending` to override).
 
-1. Copy `.env.example` to `.env`.
-2. Get `CLIENT_ID`, `CLIENT_SECRET` and `REFRESH_TOKEN` by following [chrome-webstore-upload-keys](https://github.com/fregante/chrome-webstore-upload-keys).
-3. `PUBLISHER_ID` is shown in the Developer Dashboard account settings.
+### One-time setup (done; to redo it)
+
+1. Google Cloud project with the Chrome Web Store API enabled, a service account, and a JSON key for it (`gcloud iam service-accounts keys create`).
+2. Developer Dashboard → Account → Service account: add the service account's email (one per publisher).
+3. `.env` (see `.env.example`): `SERVICE_ACCOUNT_KEY` = the key file base64-encoded on one line, `PUBLISHER_ID` from the dashboard URL.
 4. Give the same values to the workflow: `gh secret set -f .env`.
 
 `.env` is git-ignored; never commit it.

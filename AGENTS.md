@@ -11,7 +11,9 @@ src/team.js        "Paint team": friend lookup, fetch teammates' solved tasks, p
 src/ui.js          toolbar buttons + updateStats
 src/main.js        entry point; waits for the task lists, then initializes
 scripts/pack.mjs   validate + zip -> dist/
-scripts/release.mjs pack + upload/publish to Chrome Web Store
+scripts/release.mjs pack + upload/submit via Chrome Web Store API v2 (service account); defers if a review is pending
+scripts/browser.mjs Chrome for Testing with the extension loaded + persistent CSES login (npm run browser)
+scripts/shot.mjs   attaches to that browser and screenshots a CSES page
 scripts/ship.mjs   bump version + commit + push (triggers the release workflow on main)
 BACKLOG.md         planned UX work, in order
 ```
@@ -39,11 +41,11 @@ BACKLOG.md         planned UX work, in order
 ## Working on it
 
 - `npm install` once. `npm run pack` is the only automated check (syntax + duplicate top-level names); there are no tests.
-- Test manually: `chrome://extensions` → Developer mode → "Load unpacked" → this folder → reload the extension and the CSES tab after each change.
+- Test in a real browser: `npm run browser` opens Chrome for Testing (install once: `npx @puppeteer/browsers install chrome@stable --path ~/.cft`) with this folder loaded and a persistent profile in `~/.cses-pacha-profile` (log in to CSES there once). `node scripts/shot.mjs out.png [url] [--dark|--light]` screenshots it. Restart the browser after editing `src/`.
 - Adding a JS file: create it in `src/` and add it to `content_scripts[0].js` in `manifest.json` before `src/main.js`.
 - New permissions or host matches trigger extra Chrome Web Store review; avoid unless needed.
 - Keep it dependency-free at runtime.
 
 ## Release
 
-`npm run ship -- "commit message"` bumps the patch version, validates, commits everything and pushes. On `main`, that push triggers `.github/workflows/release.yml`, which publishes to the store (the store rejects a version it already has, so every release needs a bump). Setup and manual alternatives: "Publishing" in README.md.
+`npm run ship -- "commit message"` bumps the patch version, validates, commits everything and pushes. On `main`, that push triggers `.github/workflows/release.yml`, which submits it to the store, at most one version in review at a time (the store rejects a version it already has, so every release needs a bump). Setup and manual alternatives: "Publishing" in README.md.
