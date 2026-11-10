@@ -22,15 +22,24 @@ See [AGENTS.md](AGENTS.md) for how the code is organized.
 
 Requires Node.js 20.12+. Run `npm install` once.
 
-1. Bump `version` in `manifest.json`.
-2. Choose one:
-   - `npm run pack` → creates `dist/cses-pacha-tools-v<version>.zip`; upload it in the [Developer Dashboard](https://chrome.google.com/webstore/devconsole).
-   - `npm run release` → packs, uploads and publishes automatically.
+Normal flow, one command:
 
-### One-time setup for `npm run release`
+```
+npm run ship -- "commit message"
+```
+
+It bumps the patch version, validates, commits everything and pushes. When that push lands on `main`, the [Release workflow](.github/workflows/release.yml) uploads and publishes the new version and tags it `v<version>`. Uploading takes seconds; Google's review of each version (hours to days) cannot be skipped.
+
+By hand instead:
+
+- `npm run pack` → creates `dist/cses-pacha-tools-v<version>.zip`; upload it in the [Developer Dashboard](https://chrome.google.com/webstore/devconsole).
+- `npm run release` → packs, uploads and publishes from your machine (bump `version` first).
+
+### One-time setup
 
 1. Copy `.env.example` to `.env`.
 2. Get `CLIENT_ID`, `CLIENT_SECRET` and `REFRESH_TOKEN` by following [chrome-webstore-upload-keys](https://github.com/fregante/chrome-webstore-upload-keys).
 3. `PUBLISHER_ID` is shown in the Developer Dashboard account settings.
+4. Give the same values to the workflow: `gh secret set -f .env`.
 
 `.env` is git-ignored; never commit it.

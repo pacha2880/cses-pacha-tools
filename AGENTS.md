@@ -12,6 +12,7 @@ src/ui.js          toolbar buttons + updateStats
 src/main.js        entry point; waits for the task lists, then initializes
 scripts/pack.mjs   validate + zip -> dist/
 scripts/release.mjs pack + upload/publish to Chrome Web Store
+scripts/ship.mjs   bump version + commit + push (triggers the release workflow on main)
 BACKLOG.md         planned UX work, in order
 ```
 
@@ -45,4 +46,4 @@ BACKLOG.md         planned UX work, in order
 
 ## Release
 
-See "Publishing" in README.md. Always bump `version` in `manifest.json` first (the store rejects a version it already has).
+`npm run ship -- "commit message"` bumps the patch version, validates, commits everything and pushes. On `main`, that push triggers `.github/workflows/release.yml`, which publishes to the store (the store rejects a version it already has, so every release needs a bump). Setup and manual alternatives: "Publishing" in README.md.

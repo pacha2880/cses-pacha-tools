@@ -1,0 +1,51 @@
+name: Release
+
+# Publishes to the Chrome Web Store when manifest.json changes on main and its
+# version has not been released yet (no v<version> tag).
+on:
+  push:
+    branches: [main]
+    paths: [manifest.json]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: version
+        run: |
+          tag="v$(jq -r .version manifest.json)"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            echo "released=true" >> "$GITHUB_OUTPUT"
+            echo "$tag is already released; nothing to do."
+          fi
+
+      - if: steps.version.outputs.released != 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - if: steps.version.outputs.released != 'true'
+        run: npm ci
+
+      - if: steps.version.outputs.released != 'true'
+        run: npm run release
+        env:
+          CLIENT_ID: ${{ secrets.CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.REFRESH_TOKEN }}
+          PUBLISHER_ID: ${{ secrets.PUBLISHER_ID }}
+
+      - if: steps.version.outputs.released != 'true'
+        run: |
+          git tag "${{ steps.version.outputs.tag }}"
+          git push origin "${{ steps.version.outputs.tag }}"
