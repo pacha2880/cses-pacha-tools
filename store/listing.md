@@ -12,7 +12,7 @@ Adds controls to CSES to sort by number of solves, hide solved problems, show to
 
 ## Category
 
-Tools (Developer Tools)
+Education
 
 ## Description
 
