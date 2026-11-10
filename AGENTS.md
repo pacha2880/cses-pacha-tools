@@ -10,7 +10,7 @@ Every change the owner asks for ends the same way, without asking: verify it in 
 manifest.json      content script config; load order of src/*.js matters
 src/core.js        constants, `state`, $/$$ helpers, fetchDoc, scraping (extractAll), isVisible
 src/styles.js      all styles, injected as a <style> element
-src/views.js       original view vs sorted table, refresh
+src/views.js       CSES's lists vs one sorted ul.task-list of cloned li.task, team marks, refresh
 src/team.js        Team: friend lookup, fetch teammates' solved tasks into row.solvedBy
 src/ui.js          toolbar buttons + updateStats
 src/main.js        entry point; waits for the task lists, then initializes
@@ -43,7 +43,7 @@ BACKLOG.md         planned UX work, in order
 ## Known behavior (intentional unless the owner says otherwise)
 
 - Typing a username (not a numeric id) in the team box **adds that user as a CSES friend** of the logged-in user, to resolve their id. The first time, it asks inline (consent stored in `STORAGE_KEYS.friendConsent`). Unresolvable entries are listed as "Not found".
-- Topic badges are inserted but end up hidden in both views (`.hide-topic-badge` in the original view; lists are hidden in the sorted view).
+- Topic badges show only in the sorted list (`.hide-topic-badge` hides them in CSES's own lists).
 - The script runs on every `/problemset*` page; on pages without task lists the MutationObserver in `main.js` never disconnects.
 
 ## Working on it

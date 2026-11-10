@@ -24,7 +24,7 @@ function setView(mode) {
   for (const btn of $$(`#${ID}-bar .view-switch button`)) {
     btn.setAttribute("aria-pressed", String(btn.dataset.mode === mode));
   }
-  if (mode === "sorted") renderSortedTable();
+  if (mode === "sorted") renderSorted();
   else showOriginal();
 }
 
@@ -52,7 +52,7 @@ function renderBar() {
   filter.onchange = () => {
     state.filter = filter.value;
     localStorage.setItem(STORAGE_KEYS.filter, state.filter);
-    if (state.mode === "sorted") renderSortedTable();
+    if (state.mode === "sorted") renderSorted();
     else {
       applyFilterOriginal();
       updateStats();

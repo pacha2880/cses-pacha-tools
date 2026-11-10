@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "CSES Pacha Tools – Sort and Filter",
-  "description": "Adds controls to CSES to sort by number of solves, hide solved problems, show topics and paint your team's progress.",
-  "version": "1.2.4",
+  "description": "Sort CSES problems by number of solves, filter out what you or your team solved, and see each teammate's progress.",
+  "version": "1.2.5",
   "icons": { "128": "icons/icon128.png" },
   "content_scripts": [
     {

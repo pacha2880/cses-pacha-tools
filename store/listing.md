@@ -8,7 +8,7 @@ CSES Pacha Tools – Sort and Filter
 
 ## Summary (from manifest.json, max 132 chars)
 
-Adds controls to CSES to sort by number of solves, hide solved problems, show topics and paint your team's progress.
+Sort CSES problems by number of solves, filter out what you or your team solved, and see each teammate's progress.
 
 ## Category
 

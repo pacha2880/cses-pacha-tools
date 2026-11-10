@@ -51,8 +51,8 @@ Data model: `row.solvedBy` (Set of teammate ids) next to `row.baseSolved`; `row.
 
 ## 4. Sorted view that looks like CSES
 
-- [ ] Render "By solves" as one `ul.task-list` built from clones of the original `li.task` elements instead of a custom table. It inherits CSES styling, dark mode, the status icons and the team dots for free, and removes the table CSS.
-- [ ] Show the topic badge there (the badges exist but are currently hidden in both views).
+- [x] Render "By solves" as one `ul.task-list` built from clones of the original `li.task` elements instead of a custom table. It inherits CSES styling, dark mode, the status icons and the team dots for free, and removes the table CSS.
+- [x] Show the topic badge there (the badges exist but are currently hidden in both views).
 
 ## 5. Store polish
 

@@ -27,12 +27,12 @@ try {
 
   // View switch is remembered across reloads; the filter hides own solved tasks.
   await page.getByRole("button", { name: "By solves" }).click();
-  if (!(await page.locator("#pacha-cses-tools-ext-table").isVisible())) fail("By solves shows no table");
+  if (!(await page.locator("#pacha-cses-tools-ext-sorted").isVisible())) fail("By solves shows no list");
   await page.reload();
   await page.waitForSelector("#pacha-cses-tools-ext-bar");
   if ((await page.getByRole("button", { name: "By solves" }).getAttribute("aria-pressed")) !== "true") fail("view not remembered");
   await page.getByLabel("Filter").selectOption("me");
-  const rows = await page.locator("#pacha-cses-tools-ext-table tbody tr").count();
+  const rows = await page.locator("#pacha-cses-tools-ext-sorted li.task").count();
   if (rows !== 400 - solvedMarks) fail(`Hide solved shows ${rows} rows, expected ${400 - solvedMarks}`);
   await page.getByLabel("Filter").selectOption("all");
   await page.getByRole("button", { name: "By topic" }).click();

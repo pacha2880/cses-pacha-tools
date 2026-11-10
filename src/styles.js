@@ -63,22 +63,12 @@ style.textContent = `
   .dot[data-i="1"] { --c: #f59e0b; }
   .dot[data-i="2"] { --c: #d946ef; }
   .dot[data-i="3"] { --c: #14b8a6; }
-  #${ID}-table td.team { white-space: nowrap; }
-  #${ID}-table td.team .pacha-team { margin-left: 0; }
 
-  #${ID}-table {
-    width: 100%; border-collapse: collapse; margin: 10px 0 30px; font-size: 14px;
-  }
-  #${ID}-table th, #${ID}-table td {
-    border: 1px solid rgba(128,128,128,.4); padding: 6px 8px; vertical-align: top;
-  }
-  #${ID}-table th { background: rgba(128,128,128,.15); text-align: left; }
 
   .topic-badge {
-    display: inline-block; padding: 2px 6px; border-radius: 6px; font-size: 12px; margin-left: 6px;
+    display: inline-block; padding: 0 6px; border-radius: 3px; font-size: 0.75em; margin-left: 8px; vertical-align: middle; opacity: .85;
     background: rgba(128,128,128,.15); border: 1px solid rgba(128,128,128,.4);
   }
-  #${ID}-table td.status { width: 80px; text-align: center; vertical-align: middle; }
   .soft-hidden { display: none !important; }
   .hide-topic-badge .topic-badge { display: none !important; }
 `;
