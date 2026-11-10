@@ -2,9 +2,10 @@
 // Needs SERVICE_ACCOUNT_KEY (the service account's JSON key, base64) and PUBLISHER_ID
 // in .env or the environment (see README, "Publishing").
 //
-// Usage: npm run release [-- --status | --cancel-pending]
+// Usage: npm run release [-- --status | --cancel | --cancel-pending]
 //   (no flag)         upload + submit, unless a review is already pending (then exit 0, do nothing)
 //   --status          print the store status and exit
+//   --cancel          only cancel a pending review (e.g. to edit the store listing)
 //   --cancel-pending  cancel a pending review first, then upload + submit
 //
 // Policy: at most one version in review. Cancelling a pending review would restart Google's
@@ -63,6 +64,11 @@ async function main(flag) {
   console.log(`Published: ${describe(status.publishedItemRevisionStatus)}`);
   console.log(`Submitted: ${describe(status.submittedItemRevisionStatus)}`);
   if (flag === "--status") return;
+  if (flag === "--cancel") {
+    if (status.submittedItemRevisionStatus?.state !== "PENDING_REVIEW") return console.log("Nothing in review.");
+    await call("POST", `/v2/${item}:cancelSubmission`);
+    return console.log("Cancelled the pending review (the store listing can be edited now).");
+  }
 
   // This version is already in the store (e.g. uploaded by hand): just let the workflow tag it.
   const { version } = JSON.parse(readFileSync("manifest.json", "utf8"));

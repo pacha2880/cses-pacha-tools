@@ -44,6 +44,14 @@ export async function reloadExtension(browser) {
     }
   });
   await page.close();
+  await persistCsesLogin(browser.contexts()[0]);
+}
+
+// CSES logs in with a session cookie, which Chrome drops whenever it starts without restoring
+// the last session. Re-save it with an expiry so the login survives any restart.
+export async function persistCsesLogin(ctx) {
+  const session = (await ctx.cookies("https://cses.fi")).filter(c => c.expires === -1);
+  if (session.length) await ctx.addCookies(session.map(c => ({ ...c, expires: Math.floor(Date.now() / 1000) + 365 * 86400 })));
 }
 
 export async function launch({ headless = false } = {}) {
@@ -62,6 +70,9 @@ if (import.meta.url === `file:///${process.argv[1].replaceAll("\\", "/")}`) {
   const ctx = await launch();
   const page = ctx.pages()[0] ?? (await ctx.newPage());
   await page.goto(process.argv[2] ?? "https://cses.fi/problemset/");
+  // Keep a CSES login made in this window, even before any script attaches.
+  const timer = setInterval(() => persistCsesLogin(ctx).catch(() => {}), 5000);
+  ctx.on("close", () => clearInterval(timer));
   console.log(`Browser open (profile ${PROFILE}, CDP http://localhost:${CDP_PORT}). Close the window to exit.`);
   await new Promise(r => ctx.on("close", r));
 }
