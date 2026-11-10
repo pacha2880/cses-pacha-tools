@@ -58,8 +58,7 @@ style.textContent = `
     display: inline-block; padding: 2px 6px; border-radius: 6px; font-size: 12px; margin-left: 6px;
     background: rgba(128,128,128,.15); border: 1px solid rgba(128,128,128,.4);
   }
-  #${ID}-table td.status { padding: 0; width: 80px; vertical-align: middle; }
-  #${ID}-table td.status .task-score { display: block; text-align: center; line-height: 1.6; }
+  #${ID}-table td.status { width: 80px; text-align: center; vertical-align: middle; }
   .soft-hidden { display: none !important; }
   .hide-topic-badge .topic-badge { display: none !important; }
 `;

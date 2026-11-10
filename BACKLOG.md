@@ -56,6 +56,6 @@ Data model: `row.solvedBy` (Set of teammate ids) next to `row.baseSolved`; `row.
 
 ## 5. Store polish
 
-- [ ] Update the store listing to English (name, description, screenshots); the UI is English since 1.2.0.
+- [x] Update the store listing to English (name, description, screenshots); the UI is English since 1.2.0.
 - [ ] Add 16px and 48px icons.
-- [ ] New screenshots (light and dark) and a listing text that mentions the friends-list behavior.
+- [x] New screenshots (light and dark) and a listing text that mentions the friends-list behavior.

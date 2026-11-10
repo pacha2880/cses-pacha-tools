@@ -61,22 +61,21 @@ function renderSortedTable() {
     link.href = row.url;
     link.textContent = row.title;
 
-    // Same status icon as CSES's own list (check, dash, cross), including team painting
-    const status = $("span.task-score", row.li)?.cloneNode(true) ?? Object.assign(document.createElement("span"), { className: "task-score icon" });
-    status.removeAttribute("data-pacha-painted");
+    // The status cell is CSES's own indicator (check, dash, cross), including team painting
+    const statusClass = $("span.task-score", row.li)?.className ?? "task-score icon";
     const cells = [
       idx + 1,
       link,
       Number.isInteger(row.solvedCount) ? row.solvedCount : "",
       row.topic,
-      status,
+      "",
     ];
     for (const content of cells) {
       const td = document.createElement("td");
       td.append(content);
       tr.appendChild(td);
     }
-    tr.lastChild.className = "status";
+    tr.lastChild.className = `status ${statusClass}`;
 
     tbody.appendChild(tr);
   });

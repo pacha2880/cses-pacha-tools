@@ -1,5 +1,9 @@
 Chrome extension (Manifest V3) that adds a toolbar to https://cses.fi/problemset. Plain JS, no build step, no framework. All code, comments, UI text and docs are in English.
 
+## Working agreement (always)
+
+Every change the owner asks for ends the same way, without asking: verify it in the test browser (`npm run smoke`, screenshots in both CSES themes), then `npm run ship -- "message"`. That one command commits, pushes and deploys: the push to `main` runs the Release workflow (~20 s), which uploads and submits to the Chrome Web Store. Never leave finished work uncommitted, unpushed or undeployed. Google's review afterwards (hours to days) is the only part that is not instant; the workflow handles it (see Release).
+
 ## Layout
 
 ```
