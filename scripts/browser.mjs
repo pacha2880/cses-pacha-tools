@@ -4,7 +4,7 @@
 // Install the browser once: npx @puppeteer/browsers install chrome@stable --path ~/.cft
 // Usage: npm run browser [-- url]
 import { chromium } from "playwright";
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 
@@ -21,7 +21,28 @@ export function chromePath() {
   return exe;
 }
 
+// CSES's login is a session cookie; "continue where you left off" keeps it across restarts.
+function keepSessionCookies() {
+  const file = join(PROFILE, "Default", "Preferences");
+  const prefs = existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : {};
+  prefs.session = { ...prefs.session, restore_on_startup: 1 };
+  mkdirSync(join(PROFILE, "Default"), { recursive: true });
+  writeFileSync(file, JSON.stringify(prefs));
+}
+
+// Reloads the unpacked extension in a running browser (after editing src/), without a restart.
+export async function reloadExtension(browser) {
+  const page = await browser.contexts()[0].newPage();
+  await page.goto("chrome://extensions");
+  await page.evaluate(async () => {
+    const infos = await chrome.developerPrivate.getExtensionsInfo();
+    for (const e of infos.filter(e => e.location === "UNPACKED")) await chrome.developerPrivate.reload(e.id, { failQuietly: true });
+  });
+  await page.close();
+}
+
 export async function launch({ headless = false } = {}) {
+  keepSessionCookies();
   const ext = resolve(".");
   return chromium.launchPersistentContext(PROFILE, {
     executablePath: chromePath(),

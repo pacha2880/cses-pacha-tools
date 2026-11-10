@@ -42,7 +42,7 @@ BACKLOG.md         planned UX work, in order
 ## Working on it
 
 - `npm install` once. `npm run pack` is the only automated check (syntax + duplicate top-level names); there are no tests.
-- Test in a real browser: `npm run browser` opens Chrome for Testing (install once: `npx @puppeteer/browsers install chrome@stable --path ~/.cft`) with this folder loaded and a persistent profile in `~/.cses-pacha-profile` (log in to CSES there once). `node scripts/shot.mjs out.png [url] [--dark|--light]` screenshots it. Restart the browser after editing `src/`. `npm run smoke` checks toolbar, own solved count and team painting while logged in.
+- Test in a real browser: `npm run browser` opens Chrome for Testing (install once: `npx @puppeteer/browsers install chrome@stable --path ~/.cft`) with this folder loaded and a persistent profile in `~/.cses-pacha-profile` (log in to CSES there once). `node scripts/shot.mjs out.png [url] [--dark|--light]` screenshots it. Both reload the extension first, so no restart is needed after editing `src/`. `npm run smoke` checks toolbar, own solved count and team painting while logged in.
 - Adding a JS file: create it in `src/` and add it to `content_scripts[0].js` in `manifest.json` before `src/main.js`.
 - New permissions or host matches trigger extra Chrome Web Store review; avoid unless needed.
 - Keep it dependency-free at runtime.

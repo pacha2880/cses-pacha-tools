@@ -8,7 +8,7 @@ function initOnce() {
 
   ensureTopicBadges();
   renderBar();
-  showOriginal();
+  setView(state.mode);
   return true;
 }
 

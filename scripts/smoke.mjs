@@ -2,10 +2,11 @@
 // Checks the toolbar, own solved marks, and team painting with an existing CSES friend
 // (looked up by name, so no friend is added). Usage: npm run smoke [-- out.png]
 import { chromium } from "playwright";
-import { CDP_PORT } from "./browser.mjs";
+import { CDP_PORT, reloadExtension } from "./browser.mjs";
 
 const out = process.argv[2];
 const browser = await chromium.connectOverCDP(`http://localhost:${CDP_PORT}`);
+await reloadExtension(browser);
 const page = await browser.contexts()[0].newPage();
 const fail = msg => { console.error(`FAIL: ${msg}`); process.exitCode = 1; };
 

@@ -3,11 +3,12 @@
 const ID = "pacha-cses-tools-ext";
 const STORAGE_KEYS = {
   hideSolved: `${ID}-hideSolved`,
+  view: `${ID}-view`,
   mates: `${ID}-team-mates`,
 };
 
 const state = {
-  mode: "original", // "original" | "sorted"
+  mode: localStorage.getItem(STORAGE_KEYS.view) === "sorted" ? "sorted" : "original", // "original" | "sorted"
   hideSolved: localStorage.getItem(STORAGE_KEYS.hideSolved) === "1",
   data: [], // one row per task, built by extractAll()
 };
