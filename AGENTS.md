@@ -15,6 +15,8 @@ scripts/release.mjs pack + upload/submit via Chrome Web Store API v2 (service ac
 scripts/browser.mjs Chrome for Testing with the extension loaded + persistent CSES login (npm run browser)
 scripts/shot.mjs   attaches to that browser and screenshots a CSES page
 scripts/smoke.mjs  logged-in smoke test on live CSES in that browser (npm run smoke)
+scripts/store-shots.mjs  store screenshots (1280x800, both themes) into store/
+store/listing.md   store listing text (pasted in the Developer Dashboard; the API cannot set it)
 scripts/ship.mjs   bump version + commit + push (triggers the release workflow on main)
 BACKLOG.md         planned UX work, in order
 ```
