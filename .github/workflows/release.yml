@@ -1,0 +1,63 @@
+name: Release
+
+# Submits manifest.json's version to the Chrome Web Store unless it already has a
+# v<version> tag. Runs on pushes to main that change manifest.json, and every 6 hours to
+# pick up a version that was deferred because the previous one was still in review
+# (scripts/release.mjs never stacks submissions). Run it by hand with "cancel pending"
+# to replace a version that is in review (restarts the review).
+on:
+  push:
+    branches: [main]
+    paths: [manifest.json]
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      cancel_pending:
+        description: Cancel a pending review and submit this version instead
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: version
+        run: |
+          tag="v$(jq -r .version manifest.json)"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            echo "released=true" >> "$GITHUB_OUTPUT"
+            echo "$tag is already submitted; nothing to do."
+          fi
+
+      - if: steps.version.outputs.released != 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - if: steps.version.outputs.released != 'true'
+        run: npm ci
+
+      - id: release
+        if: steps.version.outputs.released != 'true'
+        run: npm run release -- ${{ inputs.cancel_pending && '--cancel-pending' || '' }}
+        env:
+          SERVICE_ACCOUNT_KEY: ${{ secrets.SERVICE_ACCOUNT_KEY }}
+          PUBLISHER_ID: ${{ secrets.PUBLISHER_ID }}
+
+      - if: steps.release.outputs.submitted == 'true'
+        run: |
+          git tag "${{ steps.version.outputs.tag }}"
+          git push origin "${{ steps.version.outputs.tag }}"
