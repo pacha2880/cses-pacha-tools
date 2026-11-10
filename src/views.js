@@ -61,7 +61,9 @@ function renderSortedTable() {
     link.href = row.url;
     link.textContent = row.title;
 
-    const status = row.solved ? "Full" : (row.totalCount ? "Pending" : "—");
+    // Same status icon as CSES's own list (check, dash, cross), including team painting
+    const status = $("span.task-score", row.li)?.cloneNode(true) ?? Object.assign(document.createElement("span"), { className: "task-score icon" });
+    status.removeAttribute("data-pacha-painted");
     const cells = [
       idx + 1,
       link,
@@ -74,7 +76,7 @@ function renderSortedTable() {
       td.append(content);
       tr.appendChild(td);
     }
-    if (row.solved) tr.lastChild.className = "badge-full";
+    tr.lastChild.className = "status";
 
     tbody.appendChild(tr);
   });

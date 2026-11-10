@@ -25,6 +25,7 @@ BACKLOG.md         planned UX work, in order
 
 - `src/*.js` are classic scripts sharing one isolated world: top-level declarations are global across files. A file may only use, at load time, what earlier files declared (calls inside functions are fine). No `import`/`export`.
 - `state.data` holds one row per task (`li`, `taskId`, `topic`, `solved`, `baseSolved`, `solvedCount`, ...). `solved` is what the UI shows; `baseSolved` is the user's own status, used to undo team painting.
+- Team feedback goes through `teamMessage`, `teamProgress`, `setTeamBusy` and `askTeam` in `ui.js` (no `alert()`/`confirm()`).
 - `isVisible(row)` is the only place that decides whether a row is shown; add new filters there.
 - After changing `state.data`, call `refresh()`.
 - DOM ids are prefixed with `ID` (`pacha-cses-tools-ext`). localStorage keys live in `STORAGE_KEYS`.
@@ -36,9 +37,8 @@ BACKLOG.md         planned UX work, in order
 
 ## Known behavior (intentional unless the owner says otherwise)
 
-- Typing a username (not a numeric id) in the team box **adds that user as a CSES friend** of the logged-in user, to resolve their id. Entries that can't be resolved are skipped silently.
+- Typing a username (not a numeric id) in the team box **adds that user as a CSES friend** of the logged-in user, to resolve their id. The first time, it asks inline (consent stored in `STORAGE_KEYS.friendConsent`). Unresolvable entries are listed as "Not found".
 - Topic badges are inserted but end up hidden in both views (`.hide-topic-badge` in the original view; lists are hidden in the sorted view).
-- "Paint team" in the original view does not re-apply "Hide solved" until it is toggled again.
 - The script runs on every `/problemset*` page; on pages without task lists the MutationObserver in `main.js` never disconnects.
 
 ## Working on it
