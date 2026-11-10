@@ -6,10 +6,9 @@ Chrome extension that improves the [CSES](https://cses.fi/problemset) problem se
 
 ## Features
 
-- **Sort by solves** — table of all problems sorted by how many people solved them.
-- **Hide solved** — show only what's left to do.
-- **Paint team** — mark as solved the problems your teammates solved (user IDs or usernames, comma-separated; usernames are added to your CSES friends list).
-- **Restore view** — back to the standard CSES layout.
+- **By topic | By solves** — CSES's lists, or all problems sorted by how many people solved them. Remembered across visits.
+- **Filter** — show all, hide what you solved, hide what anyone on your team solved, or only what your team solved and you didn't.
+- **Team** — teammates' user IDs or usernames, comma-separated: one colored dot per teammate next to each problem (filled = solved), and `Me · Team · Nobody` counts. Your own green checks are never changed. Usernames are looked up through your CSES friends list (asks before adding a friend).
 
 ## Development
 

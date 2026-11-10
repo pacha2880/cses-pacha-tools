@@ -6,10 +6,10 @@ import { mkdirSync } from "node:fs";
 import { CDP_PORT, reloadExtension } from "./browser.mjs";
 
 const SHOTS = [
-  { file: "1-by-topic-light.png", dark: false, view: "By topic", hideSolved: false },
-  { file: "2-by-solves-dark.png", dark: true, view: "By solves", hideSolved: false },
-  { file: "3-hide-solved-light.png", dark: false, view: "By solves", hideSolved: true },
-  { file: "4-hide-solved-dark.png", dark: true, view: "By topic", hideSolved: true },
+  { file: "1-by-topic-light.png", dark: false, view: "By topic", filter: "all" },
+  { file: "2-by-solves-dark.png", dark: true, view: "By solves", filter: "all" },
+  { file: "3-hide-solved-light.png", dark: false, view: "By solves", filter: "me" },
+  { file: "4-hide-solved-dark.png", dark: true, view: "By topic", filter: "me" },
 ];
 
 const browser = await chromium.connectOverCDP(`http://localhost:${CDP_PORT}`);
@@ -35,14 +35,14 @@ for (const s of SHOTS) {
   await setTheme(s.dark);
   await page.waitForSelector("#pacha-cses-tools-ext-bar");
   await page.getByRole("button", { name: s.view }).click();
-  await page.getByLabel("Hide solved").setChecked(s.hideSolved);
+  await page.getByLabel("Filter").selectOption(s.filter);
   await page.evaluate(() => { document.activeElement?.blur(); scrollTo(0, 0); });
   await page.screenshot({ path: `store/${s.file}`, scale: "css" });
   console.log(`store/${s.file}`);
 }
 
 // Leave the user's settings as they were.
-await page.getByLabel("Hide solved").setChecked(false);
+await page.getByLabel("Filter").selectOption("all");
 await page.getByRole("button", { name: "By topic" }).click();
 await setTheme(originalTheme);
 await page.close();

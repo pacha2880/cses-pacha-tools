@@ -37,15 +37,15 @@ Problem: painting turns teammates' solves into the user's own green check. The u
 
 Model: never overwrite the user's own status. Each task has two independent facts: solved by me, and solved by which teammates.
 
-- [ ] Keep CSES's green check for "solved by me" untouched.
-- [ ] Next to it, show the team: one small dot per teammate (fixed color and position per person, filled = solved, name in the tooltip). For more than 4 teammates show a count instead ("3/6").
-- [ ] Replace the "Hide solved" checkbox with one selector, which covers every use case without an "include me" option:
+- [x] Keep CSES's green check for "solved by me" untouched.
+- [x] Next to it, show the team: one small dot per teammate (fixed color and position per person, filled = solved, name in the tooltip). For more than 4 teammates show a count instead ("3/6").
+- [x] Replace the "Hide solved" checkbox with one selector, which covers every use case without an "include me" option:
   - `Show all`
   - `Hide solved by me` (my own to-do list)
   - `Hide solved by anyone` (what the whole team still lacks; today's behavior)
   - `Only solved by team, not by me` (what I can ask a teammate about)
-- [ ] Stats: `Me 134 · Team 180 · Nobody 220` instead of one mixed number.
-- [ ] Rename the feature in the UI from "Paint team" to "Team".
+- [x] Stats: `Me 134 · Team 180 · Nobody 220` instead of one mixed number.
+- [x] Rename the feature in the UI from "Paint team" to "Team".
 
 Data model: `row.solvedBy` (Set of teammate ids) next to `row.baseSolved`; `row.solved` and the `data-pacha-painted` mechanism go away. All filtering stays in `isVisible`.
 

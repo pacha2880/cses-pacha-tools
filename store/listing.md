@@ -1,6 +1,6 @@
 # Chrome Web Store listing
 
-Source of truth for the store listing (the API cannot set it; paste it in the Developer Dashboard → Store listing). Screenshots: `node scripts/store-shots.mjs` (1280x800, logged in, both CSES themes).
+Source of truth for the store listing (the dashboard locks it while a version is in review: `npm run release -- --cancel` first, or update it right after a review ends) (the API cannot set it; paste it in the Developer Dashboard → Store listing). Screenshots: `node scripts/store-shots.mjs` (1280x800, logged in, both CSES themes).
 
 ## Name (from manifest.json)
 
@@ -20,9 +20,8 @@ Practice the CSES Problem Set (cses.fi/problemset) more efficiently. CSES Pacha 
 
 Features
 • By topic | By solves: switch between CSES's usual topic lists and one list of all 400 tasks sorted by how many people solved them, so you can pick the most approachable problem next. Your choice is remembered.
-• Hide solved: show only what is left to do, in either view.
-• Progress at a glance: "Showing 179/400 · Solved 221".
-• Team: type your teammates' CSES user IDs or usernames (comma-separated) and see the tasks any of you has solved. Press Enter to apply; clear the box (or its ×) to go back to your own progress.
+• Filter: show all, hide what you solved, hide what anyone on your team solved, or only what your team solved and you didn't (ask them!).
+• Team: type your teammates' CSES user IDs or usernames (comma-separated). Each problem gets one colored dot per teammate (filled = solved), and the counts show "Me 221 · Team 243 · Nobody 157". Your own green checks stay yours. Press Enter to apply; clear the box (or its ×) to remove the team.
 
 Notes
 • The team feature needs you to be logged in to CSES, because CSES only shows other users' statistics to logged-in users.

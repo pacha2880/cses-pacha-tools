@@ -11,7 +11,7 @@ manifest.json      content script config; load order of src/*.js matters
 src/core.js        constants, `state`, $/$$ helpers, fetchDoc, scraping (extractAll), isVisible
 src/styles.js      all styles, injected as a <style> element
 src/views.js       original view vs sorted table, refresh
-src/team.js        "Paint team": friend lookup, fetch teammates' solved tasks, paint/clear
+src/team.js        Team: friend lookup, fetch teammates' solved tasks into row.solvedBy
 src/ui.js          toolbar buttons + updateStats
 src/main.js        entry point; waits for the task lists, then initializes
 scripts/pack.mjs   validate + zip -> dist/
@@ -28,7 +28,8 @@ BACKLOG.md         planned UX work, in order
 ## How the code works
 
 - `src/*.js` are classic scripts sharing one isolated world: top-level declarations are global across files. A file may only use, at load time, what earlier files declared (calls inside functions are fine). No `import`/`export`.
-- `state.data` holds one row per task (`li`, `taskId`, `topic`, `solved`, `baseSolved`, `solvedCount`, ...). `solved` is what the UI shows; `baseSolved` is the user's own status, used to undo team painting.
+- `state.data` holds one row per task (`li`, `taskId`, `topic`, `solved`, `solvedBy`, `solvedCount`, ...). `solved` is the user's own status (CSES's green check, never modified); `solvedBy` is a Set of indices into `state.team` (`[{ id, label }]`, dot position = index).
+- `state.filter` is one of `FILTERS` (core.js).
 - Team feedback goes through `teamMessage`, `teamProgress`, `setTeamBusy` and `askTeam` in `ui.js` (no `alert()`/`confirm()`).
 - `isVisible(row)` is the only place that decides whether a row is shown; add new filters there.
 - After changing `state.data`, call `refresh()`.

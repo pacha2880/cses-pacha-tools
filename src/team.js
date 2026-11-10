@@ -1,4 +1,5 @@
-// "Paint team": marks as solved every task solved by any of the given teammates.
+// Team: which of the given teammates solved each task, kept apart from the user's own
+// status (row.solvedBy next to row.solved; CSES's green check is never touched).
 // UI feedback goes through teamMessage() / teamProgress() / setTeamBusy() from ui.js.
 
 const myUserId = () => userIdFromUrl($(".controls a.account[href*='/user/']")?.getAttribute("href"));
@@ -19,7 +20,8 @@ async function fetchSolvedSet(userId) {
 // name (lowercase) -> user id, from the logged-in user's CSES friends page
 function friendsFrom(doc) {
   const map = new Map();
-  for (const a of $$("table a[href^='/user/']", doc)) map.set(a.textContent.trim().toLowerCase(), userIdFromUrl(a.getAttribute("href")));
+  // Only profile links (/user/<id>/), not the "remove" links (/user/<me>/friends/remove/<id>)
+  for (const a of $$("table a[href^='/user/']", doc).filter(a => /^\/user\/\d+\/?$/.test(a.getAttribute("href")))) map.set(a.textContent.trim().toLowerCase(), userIdFromUrl(a.getAttribute("href")));
   return map;
 }
 
@@ -38,12 +40,12 @@ async function addFriends(friendsUrl, doc, names) {
   }
 }
 
-// Resolves numeric ids and usernames to user ids. Usernames that are not CSES friends yet
+// Resolves numeric ids and usernames to { id, label }. Usernames that are not CSES friends yet
 // are added as friends, after asking the user once. Returns { ids, notFound } or null if cancelled.
 async function resolveTeam(entries) {
   const ids = [], notFound = [];
   const names = entries.filter(e => !/^\d+$/.test(e));
-  ids.push(...entries.filter(e => /^\d+$/.test(e)));
+  ids.push(...entries.filter(e => /^\d+$/.test(e)).map(id => ({ id, label: id })));
   if (!names.length) return { ids, notFound };
 
   const friendsUrl = `/user/${myUserId()}/friends/`;
@@ -67,56 +69,27 @@ async function resolveTeam(entries) {
   }
   for (const n of names) {
     const id = friends.get(n.toLowerCase());
-    if (id) ids.push(id);
+    if (id) ids.push({ id, label: n });
     else notFound.push(n);
   }
   return { ids, notFound };
 }
 
-// Makes sure the <li> has a span.task-score (CSES omits it for untouched tasks)
-function ensureScoreSpan(li) {
-  let score = $("span.task-score", li);
-  if (!score) {
-    score = document.createElement("span");
-    score.className = "task-score icon";
-    li.appendChild(document.createTextNode(" "));
-    li.appendChild(score);
-  } else {
-    score.classList.add("icon");
-  }
-  return score;
-}
 
-// Marks tasks in `solvedIds` as full, both in the DOM and in state.data.
-// Spans we turn "full" get data-pacha-painted="1" so clearTeamPaint() can undo them.
-function paintTeam(solvedIds) {
+// Records the team and, for every task, which of its members solved it
+function setTeam(members, sets) {
+  state.team = members;
   for (const row of state.data) {
-    const score = ensureScoreSpan(row.li);
-    if (!solvedIds.has(row.taskId)) continue;
-
-    if (!score.classList.contains("full")) {
-      score.classList.add("full");
-      score.setAttribute("data-pacha-painted", "1");
-    }
-    row.solved = true;
+    row.solvedBy = new Set(sets.flatMap((set, i) => (set.has(row.taskId) ? [i] : [])));
   }
-}
-
-// Undoes paintTeam(): DOM spans and state.data back to the user's own state
-function clearTeamPaint() {
-  for (const span of $$('span.task-score[data-pacha-painted="1"]')) {
-    span.classList.remove("full");
-    span.removeAttribute("data-pacha-painted");
-  }
-  for (const row of state.data) row.solved = row.baseSolved;
 }
 
 // `raw` is the comma-separated input; an empty one clears the team.
-async function runTeamPaint(raw) {
+async function runTeam(raw) {
   const entries = [...new Set(raw.split(",").map(s => s.trim()).filter(Boolean))];
   teamMessage("");
   if (!entries.length) {
-    clearTeamPaint();
+    setTeam([], []);
     return refresh();
   }
   if (!myUserId()) return teamMessage("Log in to CSES to use Team.", "error");
@@ -127,20 +100,20 @@ async function runTeamPaint(raw) {
     const team = await resolveTeam(entries);
     if (!team) return teamMessage("");
 
-    const sets = [];
-    for (const [i, id] of team.ids.entries()) {
+    const members = [], sets = [];
+    for (const [i, m] of team.ids.entries()) {
       teamProgress(`Loading ${i + 1}/${team.ids.length}…`);
-      const set = await fetchSolvedSet(id);
-      if (set) sets.push(set);
-      else team.notFound.push(id);
+      const set = await fetchSolvedSet(m.id);
+      if (set) members.push(m), sets.push(set);
+      else team.notFound.push(m.label);
     }
 
-    clearTeamPaint();
-    paintTeam(new Set(sets.flatMap(s => [...s])));
+    setTeam(members, sets);
     refresh();
-    const found = `Team: ${sets.length} ${sets.length === 1 ? "teammate" : "teammates"}`;
-    if (team.notFound.length) teamMessage(`${found}. Not found: ${team.notFound.join(", ")}`, "error");
-    else teamMessage(found);
+    const legend = members.length ? teamLegend() : "";
+    if (team.notFound.length) {
+      teamMessage(el("span", {}, legend, `${legend ? " · " : ""}Not found: ${team.notFound.join(", ")}`), "error");
+    } else teamMessage(legend);
   } catch (e) {
     console.error(e);
     teamMessage("Couldn't load the team from CSES. Try again.", "error");

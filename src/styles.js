@@ -46,6 +46,26 @@ style.textContent = `
   #${ID}-bar .team-msg { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   #${ID}-bar .team-msg.error::before { font-family: 'Font Awesome 5 Free'; font-weight: 900; content: '\\f071'; }
 
+  #${ID}-bar select { font: inherit; color: inherit; background: transparent; border: 1px solid gray; border-radius: 3px; padding: 0.15em 0.3em; }
+  #${ID}-bar select option { color: initial; }
+  #${ID}-bar .legend { display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+  /* Team marks: one dot per teammate, fixed color and position; filled = solved */
+  .pacha-team { display: inline-flex; gap: 3px; margin-left: 8px; vertical-align: middle; }
+  .pacha-team.count { font-size: 0.85em; opacity: .8; }
+  .pacha-team .dot, #${ID}-bar .dot {
+    display: inline-block; width: 0.65em; height: 0.65em; border-radius: 50%; box-sizing: border-box;
+    border: 2px solid var(--c); opacity: .9;
+  }
+  .pacha-team .dot:not(.on) { opacity: .45; }
+  .dot.on { background: var(--c); }
+  .dot[data-i="0"] { --c: #3b82f6; }
+  .dot[data-i="1"] { --c: #f59e0b; }
+  .dot[data-i="2"] { --c: #d946ef; }
+  .dot[data-i="3"] { --c: #14b8a6; }
+  #${ID}-table td.team { white-space: nowrap; }
+  #${ID}-table td.team .pacha-team { margin-left: 0; }
+
   #${ID}-table {
     width: 100%; border-collapse: collapse; margin: 10px 0 30px; font-size: 14px;
   }

@@ -13,8 +13,42 @@ function ensureTopicBadges() {
   }
 }
 
-function applyHideSolvedOriginal() {
+function applyFilterOriginal() {
   for (const row of state.data) row.li.classList.toggle("soft-hidden", !isVisible(row));
+}
+
+// Who on the team solved a task: one dot per teammate (fixed color and position, filled =
+// solved, names in the tooltip), or a count for more than 4 teammates. Null without a team.
+function teamMarks(row) {
+  const n = state.team.length;
+  if (!n) return null;
+  const names = state.team.filter((_, i) => row.solvedBy.has(i)).map(m => m.label);
+  const marks = document.createElement("span");
+  marks.className = "pacha-team";
+  marks.title = names.length ? `Solved by ${names.join(", ")}` : "No teammate solved it";
+  if (n > 4) {
+    marks.classList.add("count");
+    marks.textContent = `${row.solvedBy.size}/${n}`;
+  } else {
+    for (let i = 0; i < n; i++) marks.append(teamDot(i, row.solvedBy.has(i)));
+  }
+  return marks;
+}
+
+function teamDot(i, on) {
+  const dot = document.createElement("span");
+  dot.className = `dot${on ? " on" : ""}`;
+  dot.dataset.i = i;
+  return dot;
+}
+
+// Puts the team marks next to each task link in CSES's lists
+function renderTeamMarks() {
+  for (const row of state.data) {
+    $(".pacha-team", row.li)?.remove();
+    const marks = teamMarks(row);
+    if (marks) $("a[href]", row.li).insertAdjacentElement("afterend", marks);
+  }
 }
 
 // Shows/hides CSES's own <h2> + <ul.task-list> sections (to swap with the table)
@@ -31,7 +65,7 @@ function destroyTable() {
 function showOriginal() {
   destroyTable();
   setOriginalVisibility(true);
-  applyHideSolvedOriginal();
+  applyFilterOriginal();
   updateStats();
 }
 
@@ -49,7 +83,7 @@ function renderSortedTable() {
   tbl.id = `${ID}-table`;
   tbl.innerHTML = `
     <thead>
-      <tr><th>#</th><th>Problem</th><th>Solved by</th><th>Topic</th><th>Status</th></tr>
+      <tr><th>#</th><th>Problem</th><th>Solved by</th><th>Topic</th><th>Status</th>${state.team.length ? "<th>Team</th>" : ""}</tr>
     </thead>
     <tbody></tbody>
   `;
@@ -61,7 +95,7 @@ function renderSortedTable() {
     link.href = row.url;
     link.textContent = row.title;
 
-    // The status cell is CSES's own indicator (check, dash, cross), including team painting
+    // The status cell is CSES's own indicator (check, dash, cross)
     const statusClass = $("span.task-score", row.li)?.className ?? "task-score icon";
     const cells = [
       idx + 1,
@@ -77,6 +111,12 @@ function renderSortedTable() {
     }
     tr.lastChild.className = `status ${statusClass}`;
 
+    if (state.team.length) {
+      const td = document.createElement("td");
+      td.className = "team";
+      td.append(teamMarks(row));
+      tr.appendChild(td);
+    }
     tbody.appendChild(tr);
   });
 
@@ -87,6 +127,7 @@ function renderSortedTable() {
 
 // Call after state.data changes
 function refresh() {
+  renderTeamMarks();
   if (state.mode === "sorted") renderSortedTable();
-  else showOriginal(); // re-applies "Hide solved" too
+  else showOriginal(); // re-applies the filter too
 }

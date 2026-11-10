@@ -1,5 +1,5 @@
 // Logged-in smoke test against live CSES, in the browser from `npm run browser`.
-// Checks the toolbar, own solved marks, and team painting with an existing CSES friend
+// Checks the toolbar, own solved marks, filter, view memory and the team layer with an existing CSES friend
 // (looked up by name, so no friend is added). Usage: npm run smoke [-- out.png]
 import { chromium } from "playwright";
 import { CDP_PORT, reloadExtension } from "./browser.mjs";
@@ -25,16 +25,16 @@ try {
   console.log(`Logged in as ${me.name}; ${solvedMarks} solved marks; stats "${await stat()}"`);
   if (ownSolved !== solvedMarks) fail(`stats say ${ownSolved} solved, page shows ${solvedMarks}`);
 
-  // View switch is remembered across reloads; Hide solved hides own solved tasks.
+  // View switch is remembered across reloads; the filter hides own solved tasks.
   await page.getByRole("button", { name: "By solves" }).click();
   if (!(await page.locator("#pacha-cses-tools-ext-table").isVisible())) fail("By solves shows no table");
   await page.reload();
   await page.waitForSelector("#pacha-cses-tools-ext-bar");
   if ((await page.getByRole("button", { name: "By solves" }).getAttribute("aria-pressed")) !== "true") fail("view not remembered");
-  await page.getByLabel("Hide solved").check();
+  await page.getByLabel("Filter").selectOption("me");
   const rows = await page.locator("#pacha-cses-tools-ext-table tbody tr").count();
   if (rows !== 400 - solvedMarks) fail(`Hide solved shows ${rows} rows, expected ${400 - solvedMarks}`);
-  await page.getByLabel("Hide solved").uncheck();
+  await page.getByLabel("Filter").selectOption("all");
   await page.getByRole("button", { name: "By topic" }).click();
 
   const friend = await page.evaluate(async id => {
@@ -49,13 +49,13 @@ try {
     const before = await input.inputValue();
     await input.fill(friend);
     await input.press("Enter");
-    await page.waitForFunction(n => document.querySelectorAll("span.task-score.full").length > n || document.querySelector("[data-pacha-painted], .pacha-dot"), solvedMarks, { timeout: 15000 })
-      .catch(() => fail(`painting team "${friend}" changed nothing`));
+    await page.waitForSelector(".pacha-team .dot", { timeout: 15000 }).catch(() => fail(`team "${friend}" shows no dots`));
+    if ((await page.locator("span.task-score.full").count()) !== solvedMarks) fail("team changed the user's own green checks");
+    if (!/Me \d+ · Team \d+ · Nobody \d+/.test(await stat())) fail(`team stats missing: "${await stat()}"`);
     console.log(`Team "${friend}": stats "${await stat()}"`);
     if (out) await page.screenshot({ path: out });
     await page.locator("#pacha-cses-tools-ext-bar .clear").click();
-    await page.waitForFunction(n => document.querySelectorAll("span.task-score.full").length === n, solvedMarks, { timeout: 5000 })
-      .catch(() => fail("the × did not clear the team"));
+    await page.waitForSelector(".pacha-team", { state: "detached", timeout: 5000 }).catch(() => fail("the × did not clear the team"));
     if (before) {
       await input.fill(before);
       await input.press("Enter");

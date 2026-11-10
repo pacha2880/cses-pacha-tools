@@ -1,5 +1,5 @@
 // Toolbar injected above the first <h2>, and its handlers.
-// Row 1: view switch + "Hide solved" + stats. Row 2: team box.
+// Row 1: view switch + filter + stats. Row 2: team box.
 
 function el(tag, props = {}, ...children) {
   const node = Object.assign(document.createElement(tag), props);
@@ -10,9 +10,12 @@ function el(tag, props = {}, ...children) {
 function updateStats() {
   const stat = $(`#${ID}-bar .stat`);
   if (!stat) return;
-  const shown = state.data.filter(isVisible).length;
-  const solved = state.data.filter(d => d.solved).length;
-  stat.textContent = `Showing ${shown}/${state.data.length} · Solved ${solved}`;
+  const shown = `Showing ${state.data.filter(isVisible).length}/${state.data.length}`;
+  const me = state.data.filter(d => d.solved).length;
+  if (!state.team.length) return (stat.textContent = `${shown} · Solved ${me}`);
+  const team = state.data.filter(d => d.solvedBy.size).length;
+  const nobody = state.data.filter(d => !d.solved && !d.solvedBy.size).length;
+  stat.textContent = `${shown} · Me ${me} · Team ${team} · Nobody ${nobody}`;
 }
 
 function setView(mode) {
@@ -43,13 +46,15 @@ function renderBar() {
     }),
   );
 
-  const hideSolved = el("input", { type: "checkbox", checked: state.hideSolved });
-  hideSolved.onchange = () => {
-    state.hideSolved = hideSolved.checked;
-    localStorage.setItem(STORAGE_KEYS.hideSolved, state.hideSolved ? "1" : "0");
+  const filter = el("select", { ariaLabel: "Filter" },
+    ...Object.entries(FILTERS).map(([value, label]) => el("option", { value, textContent: label, selected: value === state.filter })),
+  );
+  filter.onchange = () => {
+    state.filter = filter.value;
+    localStorage.setItem(STORAGE_KEYS.filter, state.filter);
     if (state.mode === "sorted") renderSortedTable();
     else {
-      applyHideSolvedOriginal();
+      applyFilterOriginal();
       updateStats();
     }
   };
@@ -63,7 +68,7 @@ function renderBar() {
   const team = el("form", { className: "row team" },
     el("label", { textContent: "Team", htmlFor: `${ID}-mates` }),
     el("span", { className: "mates" }, mates, clear),
-    el("button", { type: "submit", textContent: "Paint team" }),
+    el("button", { type: "submit", textContent: "Apply" }),
   );
   mates.id = `${ID}-mates`;
   // Enter or the button applies the box; an empty box clears the team.
@@ -71,7 +76,7 @@ function renderBar() {
     e.preventDefault();
     const raw = mates.value.trim();
     localStorage.setItem(STORAGE_KEYS.mates, raw);
-    runTeamPaint(raw);
+    runTeam(raw);
   };
   clear.onclick = () => {
     mates.value = "";
@@ -84,7 +89,7 @@ function renderBar() {
   const bar = el("div", { id: `${ID}-bar` },
     el("div", { className: "row" },
       viewSwitch,
-      el("label", { className: "check" }, hideSolved, " Hide solved"),
+      filter,
       el("span", { className: "stat", role: "status" }),
     ),
     team,
@@ -135,4 +140,10 @@ function askTeam(question, yesLabel) {
     msg.replaceChildren(el("span", { textContent: question }), yes, no);
     yes.focus();
   });
+}
+
+// "Team: ● Ann ● Bob": which dot is whom
+function teamLegend() {
+  return el("span", { className: "legend" }, "Team:",
+    ...state.team.map((m, i) => el("span", {}, state.team.length <= 4 ? teamDot(i, true) : "", ` ${m.label}`)));
 }

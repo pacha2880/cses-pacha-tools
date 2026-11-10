@@ -2,7 +2,8 @@
 
 const ID = "pacha-cses-tools-ext";
 const STORAGE_KEYS = {
-  hideSolved: `${ID}-hideSolved`,
+  hideSolved: `${ID}-hideSolved`, // legacy, migrated to `filter`
+  filter: `${ID}-filter`,
   view: `${ID}-view`,
   mates: `${ID}-team-mates`,
   friendConsent: `${ID}-friend-consent`,
@@ -10,8 +11,17 @@ const STORAGE_KEYS = {
 
 const state = {
   mode: localStorage.getItem(STORAGE_KEYS.view) === "sorted" ? "sorted" : "original", // "original" | "sorted"
-  hideSolved: localStorage.getItem(STORAGE_KEYS.hideSolved) === "1",
+  filter: localStorage.getItem(STORAGE_KEYS.filter) ?? (localStorage.getItem(STORAGE_KEYS.hideSolved) === "1" ? "me" : "all"),
+  team: [], // [{ id, label }] in the order typed; a teammate's index is their dot position
   data: [], // one row per task, built by extractAll()
+};
+
+// Which tasks are shown. Keys are stored in localStorage.
+const FILTERS = {
+  all: "Show all",
+  me: "Hide solved by me",
+  anyone: "Hide solved by anyone",
+  team: "Only solved by team, not by me",
 };
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -62,8 +72,8 @@ function extractAll() {
         title: (a.textContent || "").trim(),
         url: a.href || new URL(a.getAttribute("href"), location.origin).href,
         taskId: taskIdFromUrl(a.getAttribute("href")),
-        solved, // what the UI shows; team painting overrides it
-        baseSolved: solved, // the user's own status
+        solved, // by the logged-in user (CSES's own green check; never changed)
+        solvedBy: new Set(), // indices into state.team of teammates who solved it
         solvedCount,
         totalCount,
       });
@@ -74,5 +84,11 @@ function extractAll() {
 
 // The single place that decides whether a task row is shown (both views + stats)
 function isVisible(row) {
-  return !(state.hideSolved && row.solved);
+  const team = row.solvedBy.size > 0;
+  switch (state.filter) {
+    case "me": return !row.solved;
+    case "anyone": return !row.solved && !team;
+    case "team": return !row.solved && team;
+    default: return true;
+  }
 }
