@@ -64,6 +64,16 @@ async function main(flag) {
   console.log(`Submitted: ${describe(status.submittedItemRevisionStatus)}`);
   if (flag === "--status") return;
 
+  // This version is already in the store (e.g. uploaded by hand): just let the workflow tag it.
+  const { version } = JSON.parse(readFileSync("manifest.json", "utf8"));
+  const inStore = [status.publishedItemRevisionStatus, status.submittedItemRevisionStatus]
+    .filter(s => s && s.state !== "CANCELLED" && s.state !== "REJECTED")
+    .flatMap(s => s.distributionChannels ?? []).map(c => c.crxVersion);
+  if (inStore.includes(version)) {
+    console.log(`v${version} is already in the store; nothing to upload.`);
+    return markSubmitted();
+  }
+
   if (status.submittedItemRevisionStatus?.state === "PENDING_REVIEW") {
     if (flag !== "--cancel-pending") {
       console.log("A version is still in review; not submitting another one (it would restart the review).");
@@ -86,9 +96,13 @@ async function main(flag) {
 
   const published = await call("POST", `/v2/${item}:publish`, JSON.stringify({}), { "Content-Type": "application/json" });
   console.log(`Submitted: ${published.state}`);
-  // Tells the Release workflow to tag this version as released.
-  if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, "submitted=true\n");
   if (published.warningInfo) console.log(`Warnings: ${JSON.stringify(published.warningInfo)}`);
+  markSubmitted();
+}
+
+// Tells the Release workflow to tag this version as released.
+function markSubmitted() {
+  if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, "submitted=true\n");
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
