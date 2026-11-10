@@ -13,13 +13,13 @@ Design rules for every item:
 
 Today: 6 buttons + 1 input in one row that wraps badly in CSES's 650px column; white box in dark mode.
 
-- [ ] Replace "Sort by solves" + "Restore view" with one two-option switch: `By topic | By solves`. The active option is highlighted, so the current view is always visible (Hick's Law: 2 buttons → 1 control).
-- [ ] Replace the "Hide solved: ON/OFF" button with a checkbox "Hide solved". A button whose label is its state is ambiguous: does "ON" describe now, or what a click does?
-- [ ] Remove "Clear team". Applying an empty team box clears it; add a small `×` inside the box.
-- [ ] Enter in the team box applies it.
-- [ ] Lay out in two rows that never wrap mid-label: row 1 view + filter + stats, row 2 team (Proximity / Common Region).
-- [ ] Theme-proof colors (see design rules). Check both CSES themes.
-- [ ] Remember the chosen view across reloads, like "Hide solved" already is.
+- [x] Replace "Sort by solves" + "Restore view" with one two-option switch: `By topic | By solves`. The active option is highlighted, so the current view is always visible (Hick's Law: 2 buttons → 1 control).
+- [x] Replace the "Hide solved: ON/OFF" button with a checkbox "Hide solved". A button whose label is its state is ambiguous: does "ON" describe now, or what a click does?
+- [x] Remove "Clear team". Applying an empty team box clears it; add a small `×` inside the box.
+- [x] Enter in the team box applies it.
+- [x] Lay out in two rows that never wrap mid-label: row 1 view + filter + stats, row 2 team (Proximity / Common Region).
+- [x] Theme-proof colors (see design rules). Check both CSES themes.
+- [x] Remember the chosen view across reloads, like "Hide solved" already is.
 
 ## 2. Team feedback and fixes
 

@@ -21,9 +21,21 @@ try {
 
   const solvedMarks = await page.locator("span.task-score.full").count();
   const stat = () => page.locator("#pacha-cses-tools-ext-bar .stat").innerText();
-  const ownSolved = Number((await stat()).match(/Solved: (\d+)/)?.[1]);
+  const ownSolved = Number((await stat()).match(/Solved:? (\d+)/)?.[1]);
   console.log(`Logged in as ${me.name}; ${solvedMarks} solved marks; stats "${await stat()}"`);
   if (ownSolved !== solvedMarks) fail(`stats say ${ownSolved} solved, page shows ${solvedMarks}`);
+
+  // View switch is remembered across reloads; Hide solved hides own solved tasks.
+  await page.getByRole("button", { name: "By solves" }).click();
+  if (!(await page.locator("#pacha-cses-tools-ext-table").isVisible())) fail("By solves shows no table");
+  await page.reload();
+  await page.waitForSelector("#pacha-cses-tools-ext-bar");
+  if ((await page.getByRole("button", { name: "By solves" }).getAttribute("aria-pressed")) !== "true") fail("view not remembered");
+  await page.getByLabel("Hide solved").check();
+  const rows = await page.locator("#pacha-cses-tools-ext-table tbody tr").count();
+  if (rows !== 400 - solvedMarks) fail(`Hide solved shows ${rows} rows, expected ${400 - solvedMarks}`);
+  await page.getByLabel("Hide solved").uncheck();
+  await page.getByRole("button", { name: "By topic" }).click();
 
   const friend = await page.evaluate(async id => {
     const doc = new DOMParser().parseFromString(await (await fetch(`/user/${id}/friends/`)).text(), "text/html");
@@ -36,13 +48,18 @@ try {
     const input = page.locator("#pacha-cses-tools-ext-bar input[type=text], #pacha-cses-tools-ext-bar input:not([type])").first();
     const before = await input.inputValue();
     await input.fill(friend);
-    await page.getByRole("button", { name: /paint|apply/i }).click();
+    await input.press("Enter");
     await page.waitForFunction(n => document.querySelectorAll("span.task-score.full").length > n || document.querySelector("[data-pacha-painted], .pacha-dot"), solvedMarks, { timeout: 15000 })
       .catch(() => fail(`painting team "${friend}" changed nothing`));
     console.log(`Team "${friend}": stats "${await stat()}"`);
     if (out) await page.screenshot({ path: out });
-    await input.fill(before);
-    await page.getByRole("button", { name: /paint|apply/i }).click();
+    await page.locator("#pacha-cses-tools-ext-bar .clear").click();
+    await page.waitForFunction(n => document.querySelectorAll("span.task-score.full").length === n, solvedMarks, { timeout: 5000 })
+      .catch(() => fail("the × did not clear the team"));
+    if (before) {
+      await input.fill(before);
+      await input.press("Enter");
+    }
   }
   if (out && !friend) await page.screenshot({ path: out });
 } catch (e) {

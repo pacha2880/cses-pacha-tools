@@ -35,8 +35,13 @@ export async function reloadExtension(browser) {
   const page = await browser.contexts()[0].newPage();
   await page.goto("chrome://extensions");
   await page.evaluate(async () => {
+    // Without developer mode, a reloaded unpacked extension is disabled as "unsupportedDeveloperExtension".
+    await chrome.developerPrivate.updateProfileConfiguration({ inDeveloperMode: true });
     const infos = await chrome.developerPrivate.getExtensionsInfo();
-    for (const e of infos.filter(e => e.location === "UNPACKED")) await chrome.developerPrivate.reload(e.id, { failQuietly: true });
+    for (const e of infos.filter(e => e.location === "UNPACKED")) {
+      await chrome.developerPrivate.reload(e.id, { failQuietly: true });
+      await chrome.management.setEnabled(e.id, true); // a reload can leave a --load-extension extension disabled
+    }
   });
   await page.close();
 }
