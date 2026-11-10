@@ -1,13 +1,13 @@
 {
   "manifest_version": 3,
-  "name": "CSES Pacha Tools – Ordenar y Filtrar",
-  "description": "Añade controles para ordenar por # de resueltos, ocultar resueltos y ver tópico en CSES.",
-  "version": "1.1.1",
+  "name": "CSES Pacha Tools – Sort and Filter",
+  "description": "Adds controls to CSES to sort by number of solves, hide solved problems, show topics and paint your team's progress.",
+  "version": "1.2.0",
   "icons": { "128": "icons/icon128.png" },
   "content_scripts": [
     {
       "matches": ["https://cses.fi/problemset*"],
-      "js": ["content.js"],
+      "js": ["src/core.js", "src/styles.js", "src/views.js", "src/team.js", "src/ui.js", "src/main.js"],
       "run_at": "document_idle"
     }
   ]

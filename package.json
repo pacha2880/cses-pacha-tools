@@ -1,0 +1,13 @@
+{
+  "name": "cses-pacha-tools",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "pack": "node scripts/pack.mjs",
+    "release": "node scripts/release.mjs"
+  },
+  "devDependencies": {
+    "chrome-webstore-upload-cli": "^4.0.2",
+    "fflate": "^0.8.3"
+  }
+}
