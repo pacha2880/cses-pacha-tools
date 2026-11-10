@@ -1,54 +1,76 @@
 // "Paint team": marks as solved every task solved by any of the given teammates.
+// UI feedback goes through teamMessage() / teamProgress() / setTeamBusy() from ui.js.
 
-// Set of taskIds fully solved by a user, scraped from /problemset/user/<id>/
+const myUserId = () => userIdFromUrl($(".controls a.account[href*='/user/']")?.getAttribute("href"));
+
+// Set of taskIds fully solved by a user, scraped from /problemset/user/<id>/; null if that
+// page has no statistics (unknown id, or logged out).
 async function fetchSolvedSet(userId) {
-  const url = `/problemset/user/${encodeURIComponent(userId)}/`;
-  const doc = await fetchDoc(url);
-  if (!doc) throw new Error(`Failed to fetch ${url}`);
-  const anchors = doc.querySelectorAll('table.course-user-solved a.task-score.icon.full[href*="/problemset/task/"]');
+  const doc = await fetchDoc(`/problemset/user/${encodeURIComponent(userId)}/`);
+  if (!doc || !$("table.course-user-solved", doc)) return null;
   const set = new Set();
-  anchors.forEach(a => {
+  for (const a of $$('table.course-user-solved a.task-score.icon.full[href*="/problemset/task/"]', doc)) {
     const id = taskIdFromUrl(a.getAttribute("href"));
     if (id) set.add(id);
-  });
+  }
   return set;
 }
 
-// Accepts a numeric user id or a username. For usernames, looks them up in the
-// logged-in user's friend list and, if missing, ADDS them as a friend on CSES.
-async function resolveFriendId(idOrName) {
-  if (/^\d+$/.test(idOrName)) return idOrName;
+// name (lowercase) -> user id, from the logged-in user's CSES friends page
+function friendsFrom(doc) {
+  const map = new Map();
+  for (const a of $$("table a[href^='/user/']", doc)) map.set(a.textContent.trim().toLowerCase(), userIdFromUrl(a.getAttribute("href")));
+  return map;
+}
 
-  const myId = userIdFromUrl($(".controls a.account[href*='/user/']")?.getAttribute("href"));
-  if (!myId) return null;
+// Adds `names` as CSES friends of the logged-in user (the only way to look up a username's id).
+async function addFriends(friendsUrl, doc, names) {
+  for (const name of names) {
+    const token = $("input[name='csrf_token']", doc)?.value;
+    if (!token) return;
+    await fetch(friendsUrl, {
+      method: "POST",
+      body: new URLSearchParams({ csrf_token: token, add: name }),
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    });
+    doc = (await fetchDoc(friendsUrl)) ?? doc;
+  }
+}
 
-  const friendsUrl = `/user/${myId}/friends/`;
-  const wanted = idOrName.trim().toLowerCase();
-  const findFriend = doc => {
-    const link = $$("table a[href^='/user/']", doc).find(a => a.textContent.trim().toLowerCase() === wanted);
-    return link ? userIdFromUrl(link.getAttribute("href")) : null;
-  };
+// Resolves numeric ids and usernames to user ids. Usernames that are not CSES friends yet
+// are added as friends, after asking the user once. Returns { ids, notFound } or null if cancelled.
+async function resolveTeam(entries) {
+  const ids = [], notFound = [];
+  const names = entries.filter(e => !/^\d+$/.test(e));
+  ids.push(...entries.filter(e => /^\d+$/.test(e)));
+  if (!names.length) return { ids, notFound };
 
+  const friendsUrl = `/user/${myUserId()}/friends/`;
   let doc = await fetchDoc(friendsUrl);
-  if (!doc) return null;
-  const found = findFriend(doc);
-  if (found) return found;
+  if (!doc) return { ids, notFound: notFound.concat(names) };
+  let friends = friendsFrom(doc);
 
-  const token = $("input[name='csrf_token']", doc)?.value;
-  if (!token) return null;
-
-  const formData = new URLSearchParams();
-  formData.append("csrf_token", token);
-  formData.append("add", idOrName);
-  await fetch(friendsUrl, {
-    method: "POST",
-    body: formData,
-    credentials: "same-origin",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-  });
-
-  doc = await fetchDoc(friendsUrl);
-  return doc ? findFriend(doc) : null;
+  const missing = names.filter(n => !friends.has(n.toLowerCase()));
+  if (missing.length) {
+    if (localStorage.getItem(STORAGE_KEYS.friendConsent) !== "1") {
+      const ok = await askTeam(
+        `Usernames are looked up through your CSES friends list. Add ${missing.join(", ")} as ${missing.length > 1 ? "friends" : "a friend"}?`,
+        missing.length > 1 ? "Add as friends" : "Add as friend",
+      );
+      if (!ok) return null;
+      localStorage.setItem(STORAGE_KEYS.friendConsent, "1");
+    }
+    await addFriends(friendsUrl, doc, missing);
+    doc = await fetchDoc(friendsUrl);
+    if (doc) friends = friendsFrom(doc);
+  }
+  for (const n of names) {
+    const id = friends.get(n.toLowerCase());
+    if (id) ids.push(id);
+    else notFound.push(n);
+  }
+  return { ids, notFound };
 }
 
 // Makes sure the <li> has a span.task-score (CSES omits it for untouched tasks)
@@ -89,26 +111,41 @@ function clearTeamPaint() {
   for (const row of state.data) row.solved = row.baseSolved;
 }
 
-// `raw` is the comma-separated input. Entries that can't be resolved are skipped silently.
+// `raw` is the comma-separated input; an empty one clears the team.
 async function runTeamPaint(raw) {
   const entries = [...new Set(raw.split(",").map(s => s.trim()).filter(Boolean))];
-
-  const mateIds = [];
-  for (const entry of entries) {
-    const id = await resolveFriendId(entry);
-    if (id) mateIds.push(id);
+  teamMessage("");
+  if (!entries.length) {
+    clearTeamPaint();
+    return refresh();
   }
+  if (!myUserId()) return teamMessage("Log in to CSES to use Team.", "error");
 
-  clearTeamPaint();
-  if (mateIds.length === 0) return refresh();
-
+  setTeamBusy(true);
   try {
-    const sets = await Promise.all(mateIds.map(fetchSolvedSet));
-    const union = new Set(sets.flatMap(s => [...s]));
-    paintTeam(union);
+    teamProgress("Looking up teammates…");
+    const team = await resolveTeam(entries);
+    if (!team) return teamMessage("");
+
+    const sets = [];
+    for (const [i, id] of team.ids.entries()) {
+      teamProgress(`Loading ${i + 1}/${team.ids.length}…`);
+      const set = await fetchSolvedSet(id);
+      if (set) sets.push(set);
+      else team.notFound.push(id);
+    }
+
+    clearTeamPaint();
+    paintTeam(new Set(sets.flatMap(s => [...s])));
     refresh();
+    const found = `Team: ${sets.length} ${sets.length === 1 ? "teammate" : "teammates"}`;
+    if (team.notFound.length) teamMessage(`${found}. Not found: ${team.notFound.join(", ")}`, "error");
+    else teamMessage(found);
   } catch (e) {
     console.error(e);
-    alert("Couldn't fetch solved problems. Are the IDs correct? Are you logged in?");
+    teamMessage("Couldn't load the team from CSES. Try again.", "error");
+    refresh();
+  } finally {
+    setTeamBusy(false);
   }
 }

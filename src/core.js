@@ -5,6 +5,7 @@ const STORAGE_KEYS = {
   hideSolved: `${ID}-hideSolved`,
   view: `${ID}-view`,
   mates: `${ID}-team-mates`,
+  friendConsent: `${ID}-friend-consent`,
 };
 
 const state = {

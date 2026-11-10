@@ -42,6 +42,10 @@ style.textContent = `
   #${ID}-bar .mates .clear:hover { opacity: 1; }
   #${ID}-bar .mates input:placeholder-shown + .clear { display: none; }
 
+  #${ID}-bar .team-msg:empty { display: none; }
+  #${ID}-bar .team-msg { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  #${ID}-bar .team-msg.error::before { font-family: 'Font Awesome 5 Free'; font-weight: 900; content: '\\f071'; }
+
   #${ID}-table {
     width: 100%; border-collapse: collapse; margin: 10px 0 30px; font-size: 14px;
   }

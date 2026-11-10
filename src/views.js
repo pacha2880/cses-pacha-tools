@@ -87,5 +87,5 @@ function renderSortedTable() {
 // Call after state.data changes
 function refresh() {
   if (state.mode === "sorted") renderSortedTable();
-  else updateStats();
+  else showOriginal(); // re-applies "Hide solved" too
 }

@@ -56,7 +56,7 @@ function renderBar() {
 
   const mates = el("input", {
     type: "text",
-    placeholder: "Teammate IDs or usernames",
+    placeholder: "Teammate IDs or usernames, comma-separated",
     value: localStorage.getItem(STORAGE_KEYS.mates) || "",
   });
   const clear = el("button", { type: "button", className: "clear", textContent: "×", title: "Clear team" });
@@ -79,6 +79,8 @@ function renderBar() {
     mates.focus();
   };
 
+  const msg = el("div", { className: "team-msg", role: "status" });
+
   const bar = el("div", { id: `${ID}-bar` },
     el("div", { className: "row" },
       viewSwitch,
@@ -86,6 +88,7 @@ function renderBar() {
       el("span", { className: "stat", role: "status" }),
     ),
     team,
+    msg,
   );
 
   matchPageBackground(bar);
@@ -96,4 +99,40 @@ function renderBar() {
   else document.body.insertAdjacentElement("afterbegin", bar);
 
   return bar;
+}
+
+// --- Team feedback (used by team.js) ---
+
+// Inline message under the team row; kind "error" adds a warning icon (not color alone).
+function teamMessage(text, kind = "") {
+  const msg = $(`#${ID}-bar .team-msg`);
+  if (!msg) return;
+  msg.replaceChildren(text);
+  msg.className = `team-msg ${kind}`;
+}
+
+// Progress text in the stats area while the team loads; refresh() puts the stats back.
+function teamProgress(text) {
+  const stat = $(`#${ID}-bar .stat`);
+  if (stat) stat.textContent = text;
+}
+
+function setTeamBusy(busy) {
+  for (const btn of $$(`#${ID}-bar .team button`)) btn.disabled = busy;
+}
+
+// Asks a yes/no question inline; resolves true if the user confirms.
+function askTeam(question, yesLabel) {
+  return new Promise(resolve => {
+    const answer = ok => {
+      teamMessage("");
+      resolve(ok);
+    };
+    const yes = el("button", { type: "button", textContent: yesLabel, onclick: () => answer(true) });
+    const no = el("button", { type: "button", textContent: "Cancel", onclick: () => answer(false) });
+    const msg = $(`#${ID}-bar .team-msg`);
+    msg.className = "team-msg ask";
+    msg.replaceChildren(el("span", { textContent: question }), yes, no);
+    yes.focus();
+  });
 }
