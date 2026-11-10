@@ -26,7 +26,7 @@ Today: 6 buttons + 1 input in one row that wraps badly in CSES's 650px column; w
 - [ ] While teammates load: disable the Apply button and show "Loading 2/3…" in the stats area.
 - [ ] Replace `alert()` with an inline message under the team row.
 - [ ] Say which entries failed ("Not found: Bob"). Today they are dropped silently.
-- [ ] Usernames need a logged-in user. When logged out, say "Log in to use usernames (numeric IDs work without login)". Today nothing happens.
+- [ ] The team feature needs a logged-in CSES user (teammate pages answer "Please login to see the statistics", for numeric IDs too). When logged out, say "Log in to CSES to use Team". Today nothing happens.
 - [ ] Adding a CSES friend is a side effect on the user's account: ask once before the first time ("Usernames are looked up through your CSES friends list. Add Bob as a friend?").
 - [ ] Fix: applying a team in the topic view must re-apply "Hide solved" (call `showOriginal()` from `refresh()`).
 - [ ] Placeholder: "Teammate IDs or usernames, comma-separated".
