@@ -204,16 +204,18 @@ async function updateSuggestions() {
 
   const inTeam = new Set(state.team.map(m => m.id));
   const friendById = new Map(friends.map(f => [f.id, f]));
-  const meta = u => {
-    const solved = u.solved ?? friendById.get(u.id)?.solved ?? findUser(users, u.label)?.solved;
-    return [friendById.has(u.id) ? "friend" : "", solved != null ? `${solved} solved` : ""].filter(Boolean).join(" · ");
-  };
+  // Two aligned columns: "friend" tag, then the solved count (right-aligned, tabular digits)
+  const meta = u => ({
+    tag: friendById.has(u.id) ? "friend" : "",
+    solved: u.solved ?? friendById.get(u.id)?.solved ?? findUser(users, u.label)?.solved,
+  });
   const recent = readJson(STORAGE_KEYS.recentMates, []);
   const known = [...recent, ...friends]; // recent first, then friends by solved
   const next = [], seen = new Set(inTeam);
   let people = 0;
+  let cap = MAX_PEOPLE;
   const pushUser = u => {
-    if (seen.has(u.id) || people >= MAX_PEOPLE) return;
+    if (seen.has(u.id) || people >= cap) return;
     seen.add(u.id);
     people++;
     next.push({ kind: "user", user: u, meta: meta(u) });
@@ -224,6 +226,7 @@ async function updateSuggestions() {
     const teams = readJson(STORAGE_KEYS.recentTeams, []).filter(t => t.map(u => u.id).sort().join(",") !== current);
     for (const t of teams.slice(0, MAX_TEAMS)) next.push({ kind: "team", users: t });
     for (const u of recent.slice(0, MAX_RECENT_EMPTY)) pushUser(u);
+    cap = Infinity; // every friend; the list scrolls
     for (const u of friends) pushUser(u);
   } else {
     const lq = q.toLowerCase();
@@ -267,7 +270,13 @@ function highlight(label, q) {
 
 function optionFor(o, i, q) {
   let body;
-  if (o.kind === "user") body = [el("span", { className: "name" }, ...highlight(o.user.label, q)), el("span", { className: "meta", textContent: o.meta })];
+  if (o.kind === "user") {
+    body = [
+      el("span", { className: "name" }, ...highlight(o.user.label, q)),
+      el("span", { className: "meta kind", textContent: o.meta.tag }),
+      el("span", { className: "meta solved", textContent: o.meta.solved != null ? `${o.meta.solved} solved` : "" }),
+    ];
+  }
   else if (o.kind === "id") body = [el("span", { className: "name", textContent: `User ID ${o.user.id}` })];
   else if (o.kind === "lookup") body = [el("span", { className: "name" }, "Look up “", el("b", { textContent: o.name }), "” on CSES"), el("span", { className: "meta", textContent: "adds as CSES friend" })];
   else {

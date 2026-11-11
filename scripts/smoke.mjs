@@ -62,6 +62,12 @@ try {
     if ((await page.locator(OWN_MARKS).count()) !== solvedMarks) fail("team changed the user's own green checks");
     if (!/Me \d+ · Team \d+ · Nobody \d+/.test(await stat())) fail(`team stats missing: "${await stat()}"`);
     console.log(`Team "${friend}": stats "${await stat()}"`);
+    // "Hide solved by team" ignores the user's own status
+    const teamSolved = Number((await stat()).match(/Team (\d+)/)[1]);
+    await page.getByLabel("Filter").selectOption("byTeam");
+    const shownByTeam = await page.locator("ul.task-list:not(#pacha-cses-tools-ext-sorted) li.task:not(.soft-hidden)").count();
+    if (shownByTeam !== 400 - teamSolved) fail(`Hide solved by team shows ${shownByTeam}, expected ${400 - teamSolved}`);
+    await page.getByLabel("Filter").selectOption("all");
     if (out) await page.screenshot({ path: out });
     await page.locator(".chip .toggle").first().click();
     await page.waitForSelector(".pacha-team", { state: "detached", timeout: 5000 }).catch(() => fail("hiding the only teammate left their dots"));

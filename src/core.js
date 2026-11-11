@@ -26,6 +26,7 @@ const state = {
 const FILTERS = {
   all: "Show all",
   me: "Hide solved by me",
+  byTeam: "Hide solved by team",
   anyone: "Hide solved by anyone",
   team: "Only solved by team, not by me",
 };
@@ -93,6 +94,7 @@ function isVisible(row) {
   const team = row.solvedBy.size > 0;
   switch (state.filter) {
     case "me": return !row.solved;
+    case "byTeam": return !team; // ignores the user's own status
     case "anyone": return !row.solved && !team;
     case "team": return !row.solved && team;
     default: return true;

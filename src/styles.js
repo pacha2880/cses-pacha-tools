@@ -77,6 +77,7 @@ style.textContent = `
     position: absolute; left: -1px; right: -1px; top: 100%; z-index: 10000;
     margin: 2px 0 0; padding: 2px 0; list-style: none;
     border: 1px solid gray; border-radius: 3px; box-shadow: 0 4px 12px rgba(0,0,0,.25);
+    max-height: 20em; overflow-y: auto; /* all friends: scrolls past ~12 rows */
   }
   #${ID}-bar .suggest[hidden] { display: none; }
   #${ID}-bar .option { display: flex; align-items: center; gap: 12px; padding: 3px 8px; cursor: pointer; white-space: nowrap; }
@@ -84,6 +85,8 @@ style.textContent = `
   #${ID}-bar .option .name { overflow: hidden; text-overflow: ellipsis; }
   #${ID}-bar .option .name b { font-weight: bold; }
   #${ID}-bar .option .meta { margin-left: auto; opacity: .65; font-size: .9em; }
+  #${ID}-bar .option .meta + .meta { margin-left: 0; }
+  #${ID}-bar .option .solved { min-width: 6.5em; text-align: right; font-variant-numeric: tabular-nums; }
   #${ID}-bar .option .forget { border: 0; box-shadow: none; background: none; color: inherit; padding: 0 4px; opacity: .6; }
   #${ID}-bar .option .forget:hover { opacity: 1; }
   #${ID}-bar .option.lookup { border-top: 1px solid rgba(128,128,128,.3); }
@@ -120,6 +123,8 @@ style.textContent = `
   #${ID}-sorted > li { align-items: baseline; }
   #${ID}-sorted > li > :first-child, #${ID}-sorted .task-score { align-self: stretch; }
   #${ID}-sorted > li:hover { background-color: rgba(128,128,128,.14); }
+  /* Only the name gives way (ellipsis); the icon is CSES's li::before */
+  #${ID}-sorted > li::before, #${ID}-sorted > li > :not(a) { flex-shrink: 0; }
   #${ID}-sorted > li > a { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   #${ID}-sorted .pacha-team { flex: none; margin-left: .5em; }
   .topic-badge {

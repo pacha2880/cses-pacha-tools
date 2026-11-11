@@ -80,6 +80,8 @@ function renderSorted() {
   for (const row of rows) {
     const li = row.li.cloneNode(true);
     li.classList.remove("soft-hidden");
+    const a = $("a[href]", li);
+    if (a) a.title = row.title; // long names are cut with an ellipsis
     ul.appendChild(li);
   }
   $(`#${ID}-bar`).insertAdjacentElement("afterend", ul);
