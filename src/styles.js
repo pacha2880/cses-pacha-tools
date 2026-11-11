@@ -128,7 +128,8 @@ style.textContent = `
   }
   #${ID}-sorted > li:hover .topic-badge { opacity: .85; }
   #${ID}-sorted .detail {
-    flex: 0 0 7.5em; margin-left: .5em; padding-right: .75em; text-align: right;
+    flex: 0 0 auto; min-width: 10em; white-space: nowrap; /* fits "183819 / 191891" */
+    margin-left: .5em; padding-right: .75em; text-align: right;
     font-variant-numeric: tabular-nums lining-nums; opacity: .75;
   }
   .soft-hidden { display: none !important; }
