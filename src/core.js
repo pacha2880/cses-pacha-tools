@@ -8,6 +8,7 @@ const STORAGE_KEYS = {
   mates: `${ID}-team-mates`, // legacy comma-separated string, migrated to `team`
   team: `${ID}-team`, // JSON [{ id, label, slot, hidden }]
   recentTeams: `${ID}-recent-teams`, // JSON [[{ id, label }]], newest first
+  savedTeams: `${ID}-saved-teams`, // JSON [[{ id, label }]], starred by the user, newest first
   recentMates: `${ID}-recent-mates`, // JSON [{ id, label }], newest first
   friends: `${ID}-friends`, // JSON { me, t, counts: { id: solved } }, cached friends ranking
   friendConsent: `${ID}-friend-consent`,

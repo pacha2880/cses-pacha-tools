@@ -1,13 +1,15 @@
 // Team field: one box with a chip per teammate and a text input with suggestions
-// (ARIA combobox + listbox). Click a chip to hide/show that teammate, × removes it.
+// (ARIA combobox + listbox). Click a chip to hide/show that teammate, × removes it. The ☆ at
+// the end of the field saves the current team, like a browser bookmark star.
 // Suggestion order, most likely intent first:
-//   empty box: recent teams (one click restores a team), recent teammates, friends by solved;
+//   empty box: saved teams (★), recent teams (☆ saves, × forgets; one click restores a team),
+//              recent teammates, friends by solved;
 //   typing:    exact match; your people (recent, friends), then everyone (rank order) by
 //              prefix; your people, then everyone by substring (3+ chars);
 //   last row:  "User ID n" for digits, or "Look up on CSES" when nothing matches exactly.
 
 // Short lists are faster to scan (Hick's law; Baymard: about 10 at most on desktop)
-const MAX_PEOPLE = 7, MAX_TEAMS = 2, MAX_RECENT_EMPTY = 3;
+const MAX_PEOPLE = 7, MAX_TEAMS = 3, MAX_RECENT_EMPTY = 3; // saved teams: all of them
 const fieldPart = sel => $(`#${ID}-bar .team ${sel}`);
 
 function teamField() {
@@ -30,7 +32,16 @@ function teamField() {
   chips.setAttribute("role", "list");
   chips.setAttribute("aria-label", "Teammates");
 
-  const field = el("div", { className: "field" }, chips, input);
+  // Bookmark star for the current team (shown with 2+ teammates)
+  const star = el("button", { type: "button", className: "star save-team", hidden: true });
+  star.onclick = () => {
+    const saved = toggleSaved(currentTeamUsers());
+    announce(saved ? "Team saved" : "Team removed from saved teams");
+    renderChips();
+    if (!list.hidden) updateSuggestions();
+  };
+
+  const field = el("div", { className: "field" }, chips, input, star);
   const combo = el("div", { className: "combo" }, field, list); // list outside the scrolling field
   field.onclick = e => {
     if (e.target === field || e.target === chips) input.focus();
@@ -63,7 +74,19 @@ function renderChips() {
   chips.replaceChildren(...state.team.map(chipFor));
   const input = fieldPart("input");
   input.placeholder = state.team.length ? "" : "Add teammates by username or ID";
+  const users = currentTeamUsers();
+  setStar(fieldPart(".save-team"), isSaved(users), "this team");
+  fieldPart(".save-team").hidden = users.length < 2;
   if (focusedId) $(`.chip[data-id="${focusedId}"] .toggle`, chips)?.focus();
+}
+
+// ★ saved / ☆ not saved; the label says what a click does
+function setStar(button, saved, what) {
+  button.textContent = saved ? "★" : "☆";
+  button.classList.toggle("on", saved);
+  button.setAttribute("aria-pressed", String(saved));
+  button.setAttribute("aria-label", `Save ${what}`);
+  button.title = saved ? "Saved team · click to unsave" : `Save ${what}`;
 }
 
 function chipFor(member) {
@@ -222,9 +245,11 @@ async function updateSuggestions() {
   };
 
   if (!q) {
-    const current = state.team.map(m => m.id).sort().join(",");
-    const teams = readJson(STORAGE_KEYS.recentTeams, []).filter(t => t.map(u => u.id).sort().join(",") !== current);
-    for (const t of teams.slice(0, MAX_TEAMS)) next.push({ kind: "team", users: t });
+    const current = currentTeamUsers();
+    const other = t => !sameTeam(t, current);
+    for (const t of savedTeams().filter(other)) next.push({ kind: "team", users: t, saved: true });
+    const recentTeams = readJson(STORAGE_KEYS.recentTeams, []).filter(t => other(t) && !isSaved(t));
+    for (const t of recentTeams.slice(0, MAX_TEAMS)) next.push({ kind: "team", users: t, saved: false });
     for (const u of recent.slice(0, MAX_RECENT_EMPTY)) pushUser(u);
     cap = Infinity; // every friend; the list scrolls
     for (const u of friends) pushUser(u);
@@ -280,15 +305,30 @@ function optionFor(o, i, q) {
   else if (o.kind === "id") body = [el("span", { className: "name", textContent: `User ID ${o.user.id}` })];
   else if (o.kind === "lookup") body = [el("span", { className: "name" }, "Look up “", el("b", { textContent: o.name }), "” on CSES"), el("span", { className: "meta", textContent: "adds as CSES friend" })];
   else {
-    const forget = el("button", { type: "button", className: "forget", textContent: "×", tabIndex: -1, title: "Forget this team" });
-    forget.setAttribute("aria-label", "Forget this team");
-    forget.onmousedown = e => e.preventDefault();
-    forget.onclick = e => {
-      e.stopPropagation();
-      forgetTeam(o.users);
-      updateSuggestions();
+    // Row buttons act without picking the row (and keep focus in the input)
+    const rowButton = (className, onclick) => {
+      const b = el("button", { type: "button", className, tabIndex: -1 });
+      b.onmousedown = e => e.preventDefault();
+      b.onclick = e => {
+        e.stopPropagation();
+        onclick();
+        updateSuggestions();
+      };
+      return b;
     };
-    body = [el("span", { className: "name", textContent: o.users.map(u => u.label).join(", ") }), el("span", { className: "meta", textContent: "recent team" }), forget];
+    const star = rowButton("star", () => toggleSaved(o.users));
+    setStar(star, o.saved, "this team");
+    const forget = rowButton("forget", () => forgetTeam(o.users));
+    forget.textContent = "×";
+    forget.title = "Forget this team";
+    forget.setAttribute("aria-label", "Forget this team");
+    if (o.saved) forget.style.visibility = "hidden"; // unstar first; keeps the columns aligned
+    body = [
+      el("span", { className: "name", textContent: o.users.map(u => u.label).join(", ") }),
+      el("span", { className: "meta", textContent: o.saved ? "saved team" : "recent team" }),
+      star,
+      forget,
+    ];
   }
   const li = el("li", { id: `${ID}-opt-${i}`, className: `option ${o.kind}` }, ...body);
   li.setAttribute("role", "option");

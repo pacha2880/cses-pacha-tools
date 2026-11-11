@@ -89,6 +89,17 @@ style.textContent = `
   #${ID}-bar .option .solved { min-width: 6.5em; text-align: right; font-variant-numeric: tabular-nums; }
   #${ID}-bar .option .forget { border: 0; box-shadow: none; background: none; color: inherit; padding: 0 4px; opacity: .6; }
   #${ID}-bar .option .forget:hover { opacity: 1; }
+
+  /* Save-team star: quiet outline until saved, then gold (like a browser bookmark star) */
+  #${ID}-bar .star, #${ID}-bar .star:focus {
+    border: 0; box-shadow: none; background: none; color: inherit; font: inherit;
+    padding: 0 4px; margin: 0; line-height: 1; font-size: 1.15em; cursor: pointer; opacity: .45;
+  }
+  #${ID}-bar .star:hover { opacity: .9; }
+  #${ID}-bar .star.on { color: #e8a400; opacity: 1; }
+  #${ID}-bar .star:focus-visible { outline: 2px solid #4a90d9; outline-offset: -2px; border-radius: 3px; }
+  #${ID}-bar .star[hidden] { display: none; }
+  #${ID}-bar .field .save-team { margin-left: auto; }
   #${ID}-bar .option.lookup { border-top: 1px solid rgba(128,128,128,.3); }
 
   #${ID}-bar .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

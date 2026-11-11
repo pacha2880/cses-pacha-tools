@@ -50,7 +50,7 @@ BACKLOG.md         planned UX work, in order
 
 - Teammates are resolved from numeric ids, data/users.txt and the user's CSES friends. Only the explicit "Look up “x” on CSES" suggestion **adds that user as a CSES friend** to resolve their id; the first time it asks inline (consent in `STORAGE_KEYS.friendConsent`). A typed name that resolves to nothing is never added.
 - At most 6 teammates (one color each). Enter takes the highlighted suggestion only when it is a typed id or a name starting with the text; otherwise it resolves the exact text or says how to look it up.
-- A team of 2+ kept for 10 s becomes a recent team, offered when the empty field is focused. The old comma-separated `mates` key is migrated once.
+- A team of 2+ kept for 10 s (or when the tab is hidden/closed) becomes a recent team (5 kept, 3 shown). The ☆ at the end of the field, or on a recent-team suggestion, saves a team (★, kept until unstarred, listed first). The empty field offers saved teams, recent teams, recent teammates, then all friends. The old comma-separated `mates` key is migrated once.
 - Topic badges show only in the sorted list (`.hide-topic-badge` hides them in CSES's own lists).
 - The script runs on every `/problemset*` page; on pages without task lists the MutationObserver in `main.js` never disconnects.
 

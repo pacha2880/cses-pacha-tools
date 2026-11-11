@@ -167,7 +167,7 @@ function toggleHidden(member) {
   teamChanged();
 }
 
-// Replaces the team (a recent team picked from the suggestions)
+// Replaces the team (a saved or recent team picked from the suggestions)
 function useTeam(users) {
   state.team = [];
   for (const u of users) addMember(u);
@@ -181,23 +181,52 @@ function rememberMate(user) {
   localStorage.setItem(STORAGE_KEYS.recentMates, JSON.stringify([{ id: user.id, label: user.label }, ...mates].slice(0, 20)));
 }
 
+// Same people, whatever the order
 const teamKey = users => users.map(u => u.id).sort().join(",");
+const sameTeam = (a, b) => teamKey(a) === teamKey(b);
 
-// A team of 2+ kept unchanged for 10 s becomes a recent team
+// The current team as [{ id, label }], without members CSES did not find
+const currentTeamUsers = () => state.team.filter(m => m.status !== "error").map(({ id, label }) => ({ id, label }));
+
+const writeJson = (key, value) => localStorage.setItem(key, JSON.stringify(value));
+
+// A team of 2+ kept unchanged for 10 s, or still there when the tab is hidden or closed,
+// becomes a recent team (5 kept)
 let rememberTimer = 0;
+function rememberTeam() {
+  clearTimeout(rememberTimer);
+  rememberTimer = 0;
+  const users = currentTeamUsers();
+  if (users.length < 2) return;
+  const teams = readJson(STORAGE_KEYS.recentTeams, []).filter(t => !sameTeam(t, users));
+  writeJson(STORAGE_KEYS.recentTeams, [users, ...teams].slice(0, 5));
+}
 function rememberTeamSoon() {
   clearTimeout(rememberTimer);
-  rememberTimer = setTimeout(() => {
-    const users = state.team.filter(m => m.status !== "error").map(({ id, label }) => ({ id, label }));
-    if (users.length < 2) return;
-    const teams = readJson(STORAGE_KEYS.recentTeams, []).filter(t => teamKey(t) !== teamKey(users));
-    localStorage.setItem(STORAGE_KEYS.recentTeams, JSON.stringify([users, ...teams].slice(0, 5)));
-  }, 10000);
+  rememberTimer = setTimeout(rememberTeam, 10000);
+}
+document.addEventListener("visibilitychange", () => document.hidden && rememberTimer && rememberTeam());
+addEventListener("pagehide", () => rememberTimer && rememberTeam());
+
+// Saved (starred) teams: kept until unstarred, listed first in the suggestions
+const savedTeams = () => readJson(STORAGE_KEYS.savedTeams, []);
+const isSaved = users => savedTeams().some(t => sameTeam(t, users));
+
+// Stars or unstars a team; returns true if it is now saved
+function toggleSaved(users) {
+  const saved = isSaved(users);
+  const rest = savedTeams().filter(t => !sameTeam(t, users));
+  writeJson(STORAGE_KEYS.savedTeams, saved ? rest : [users, ...rest]);
+  if (saved) {
+    // Unstarred: it stays at hand as the most recent team
+    const recent = readJson(STORAGE_KEYS.recentTeams, []).filter(t => !sameTeam(t, users));
+    writeJson(STORAGE_KEYS.recentTeams, [users, ...recent].slice(0, 5));
+  }
+  return !saved;
 }
 
 function forgetTeam(users) {
-  const teams = readJson(STORAGE_KEYS.recentTeams, []).filter(t => teamKey(t) !== teamKey(users));
-  localStorage.setItem(STORAGE_KEYS.recentTeams, JSON.stringify(teams));
+  writeJson(STORAGE_KEYS.recentTeams, readJson(STORAGE_KEYS.recentTeams, []).filter(t => !sameTeam(t, users)));
 }
 
 // Restores the saved team on page load (migrating the old comma-separated box once).
