@@ -19,7 +19,7 @@ function loadUsers() {
         ids.push(id);
         solved[i] = Number(n);
         starts[i++] = blob.length;
-        blob += name.toLowerCase() + "\n"; // names are ASCII, so offsets match
+        blob += name.toLowerCase() + "\n"; // lowercasing keeps each name's length (checked on the data), so offsets match
       }
       return { names, ids, solved, blob, starts };
     })
