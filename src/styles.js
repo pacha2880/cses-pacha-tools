@@ -123,13 +123,15 @@ style.textContent = `
   #${ID}-sorted > li { align-items: baseline; }
   #${ID}-sorted > li > :first-child, #${ID}-sorted .task-score { align-self: stretch; }
   #${ID}-sorted > li:hover { background-color: rgba(128,128,128,.14); }
-  /* Only the name gives way (ellipsis); the icon is CSES's li::before */
+  /* Long names wrap onto a second line (nothing is cut); every other column keeps its size
+     and position (the icon is CSES's li::before). */
   #${ID}-sorted > li::before, #${ID}-sorted > li > :not(a) { flex-shrink: 0; }
-  #${ID}-sorted > li > a { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #${ID}-sorted > li > a { min-width: 6em; overflow-wrap: break-word; }
   #${ID}-sorted .pacha-team { flex: none; margin-left: .5em; }
-  .topic-badge {
-    flex: 0 0 13.5em; margin-left: 1.5em; font-size: .8em;
-    opacity: .65; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  .topic-badge { flex: 0 0 13.5em; margin-left: 1.5em; font-size: .8em; opacity: .65; }
+  /* Narrow windows (CSES's own mobile layout): the topic is secondary, names need the room */
+  @media (max-width: 640px) {
+    #${ID}-sorted .topic-badge { display: none; }
   }
   #${ID}-sorted > li:hover .topic-badge { opacity: .85; }
   #${ID}-sorted .detail {

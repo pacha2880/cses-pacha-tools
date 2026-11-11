@@ -9,7 +9,6 @@ function ensureTopicBadges() {
     const badge = document.createElement("span");
     badge.className = "topic-badge";
     badge.textContent = row.topic;
-    badge.title = row.topic; // the column may cut long topics
     a.insertAdjacentElement("afterend", badge);
   }
 }
@@ -80,8 +79,6 @@ function renderSorted() {
   for (const row of rows) {
     const li = row.li.cloneNode(true);
     li.classList.remove("soft-hidden");
-    const a = $("a[href]", li);
-    if (a) a.title = row.title; // long names are cut with an ellipsis
     ul.appendChild(li);
   }
   $(`#${ID}-bar`).insertAdjacentElement("afterend", ul);
