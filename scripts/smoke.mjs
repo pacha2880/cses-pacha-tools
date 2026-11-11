@@ -8,6 +8,8 @@ const out = process.argv[2];
 const browser = await chromium.connectOverCDP(`http://localhost:${CDP_PORT}`);
 await reloadExtension(browser);
 const page = await browser.contexts()[0].newPage();
+// CSES's own lists only (the By solves list holds clones of the same rows)
+const OWN_MARKS = "ul.task-list:not(#pacha-cses-tools-ext-sorted) span.task-score.full";
 const fail = msg => { console.error(`FAIL: ${msg}`); process.exitCode = 1; };
 
 try {
@@ -19,7 +21,7 @@ try {
   });
   if (!me) throw new Error("not logged in to CSES in the test browser (npm run browser, then log in)");
 
-  const solvedMarks = await page.locator("span.task-score.full").count();
+  const solvedMarks = await page.locator(OWN_MARKS).count();
   const stat = () => page.locator("#pacha-cses-tools-ext-bar .stat").innerText();
   const ownSolved = Number((await stat()).match(/Solved:? (\d+)/)?.[1]);
   console.log(`Logged in as ${me.name}; ${solvedMarks} solved marks; stats "${await stat()}"`);
@@ -57,7 +59,7 @@ try {
     await input.press("Enter");
     await page.waitForSelector(".chip.ready", { timeout: 15000 }).catch(() => fail(`team "${friend}" never loaded`));
     await page.waitForSelector(".pacha-team .dot", { timeout: 5000 }).catch(() => fail(`team "${friend}" shows no dots`));
-    if ((await page.locator("span.task-score.full").count()) !== solvedMarks) fail("team changed the user's own green checks");
+    if ((await page.locator(OWN_MARKS).count()) !== solvedMarks) fail("team changed the user's own green checks");
     if (!/Me \d+ · Team \d+ · Nobody \d+/.test(await stat())) fail(`team stats missing: "${await stat()}"`);
     console.log(`Team "${friend}": stats "${await stat()}"`);
     if (out) await page.screenshot({ path: out });
