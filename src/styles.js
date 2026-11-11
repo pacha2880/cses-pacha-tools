@@ -138,19 +138,26 @@ style.textContent = `
      and position (the icon is CSES's li::before). */
   #${ID}-sorted > li::before, #${ID}-sorted > li > :not(a) { flex-shrink: 0; }
   #${ID}-sorted > li > a { min-width: 6em; overflow-wrap: break-word; }
-  #${ID}-sorted .pacha-team { flex: none; margin-left: .5em; }
-  .topic-badge { flex: 0 0 13.5em; margin-left: 1.5em; font-size: .8em; opacity: .65; }
+  /* Columns: name, topic, team dots, solves, status. Every row has the same dots, so they line
+     up as a column instead of trailing names of different lengths. */
+  #${ID}-sorted .topic-badge { order: 1; }
+  #${ID}-sorted .pacha-team { order: 2; flex: none; margin-left: .75em; }
+  #${ID}-sorted .detail { order: 3; }
+  #${ID}-sorted .task-score { order: 4; }
+  .topic-badge { flex: 0 0 12.5em; margin-left: 1.25em; font-size: .8em; opacity: .65; }
+  /* In CSES's own lists the dots sit next to the name, centered on the row */
+  ul.task-list:not(#${ID}-sorted) .pacha-team { align-self: center; }
   /* Narrow windows (CSES's own mobile layout): the topic is secondary, names need the room */
   @media (max-width: 640px) {
     #${ID}-sorted .topic-badge { display: none; }
   }
   #${ID}-sorted > li:hover .topic-badge { opacity: .85; }
   #${ID}-sorted .detail {
-    flex: 0 0 auto; min-width: 10em; white-space: nowrap; /* fits "183819 / 191891" */
+    flex: 0 0 auto; min-width: 9.5em; white-space: nowrap; /* fits "183819 / 191891" */
     margin-left: .5em; padding-right: .75em; text-align: right;
     font-variant-numeric: tabular-nums lining-nums; opacity: .75;
   }
-  .soft-hidden { display: none !important; }
+  .soft-hidden, .pacha-empty { display: none !important; }
   .hide-topic-badge .topic-badge { display: none !important; }
 `;
 document.head.appendChild(style);

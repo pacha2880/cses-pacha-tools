@@ -23,7 +23,7 @@ scripts/browser.mjs Chrome for Testing with the extension loaded + persistent CS
 scripts/shot.mjs   attaches to that browser and screenshots a CSES page
 scripts/users.mjs  rebuilds data/users.txt from CSES's ranking with the test browser's session (~1 page/s, resumable)
 scripts/smoke.mjs  logged-in smoke test on live CSES in that browser (npm run smoke)
-scripts/store-shots.mjs  store screenshots (1280x800, both themes) into store/
+scripts/store-shots.mjs  store screenshots (1280x800, both themes, demo team of public ranking users) into store/
 store/listing.md   store listing text; scripts/store-listing.mjs puts it and store/*.png in the Developer Dashboard (test browser signed in to Google; listing locked while a version is in review)
 scripts/ship.mjs   bump version + commit + push (triggers the release workflow on main)
 BACKLOG.md         planned UX work, in order
@@ -51,7 +51,7 @@ BACKLOG.md         planned UX work, in order
 - Teammates are resolved from numeric ids, data/users.txt and the user's CSES friends. Only the explicit "Look up “x” on CSES" suggestion **adds that user as a CSES friend** to resolve their id; the first time it asks inline (consent in `STORAGE_KEYS.friendConsent`). A typed name that resolves to nothing is never added.
 - At most 6 teammates (one color each). Enter takes the highlighted suggestion only when it is a typed id or a name starting with the text; otherwise it resolves the exact text or says how to look it up.
 - A team of 2+ kept for 10 s (or when the tab is hidden/closed) becomes a recent team (5 kept, 3 shown). The ☆ at the end of the field, or on a recent-team suggestion, saves a team (★, kept until unstarred, listed first). The empty field offers saved teams, recent teams, recent teammates, then all friends. The old comma-separated `mates` key is migrated once.
-- Topic badges show only in the sorted list (`.hide-topic-badge` hides them in CSES's own lists).
+- Topic badges show only in the sorted list (`.hide-topic-badge` hides them in CSES's own lists). In the sorted list the columns are name, topic, team dots, solves, status (CSS `order`). In CSES's own lists a topic whose tasks are all filtered out is hidden (`.pacha-empty`).
 - The script runs on every `/problemset*` page; on pages without task lists the MutationObserver in `main.js` never disconnects.
 
 ## Working on it

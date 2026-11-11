@@ -15,6 +15,12 @@ function ensureTopicBadges() {
 
 function applyFilterOriginal() {
   for (const row of state.data) row.li.classList.toggle("soft-hidden", !isVisible(row));
+  // A topic with every task filtered out is hidden whole (no empty heading)
+  for (const ul of new Set(state.data.map(row => row.li.parentElement))) {
+    const empty = !$$("li.task", ul).some(li => !li.classList.contains("soft-hidden"));
+    ul.classList.toggle("pacha-empty", empty);
+    ul.previousElementSibling?.classList.toggle("pacha-empty", empty);
+  }
 }
 
 // Who on the team solved a task: one dot per shown teammate (fixed color by slot, filled =
