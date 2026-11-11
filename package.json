@@ -8,7 +8,8 @@
     "status": "node scripts/release.mjs --status",
     "ship": "node scripts/ship.mjs",
     "browser": "node scripts/browser.mjs",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "node scripts/smoke.mjs",
+    "users": "node scripts/users.mjs"
   },
   "devDependencies": {
     "fflate": "^0.8.3",

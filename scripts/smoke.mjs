@@ -1,6 +1,6 @@
 // Logged-in smoke test against live CSES, in the browser from `npm run browser`.
 // Checks the toolbar, own solved marks, filter, view memory and the team layer with an existing CSES friend
-// (looked up by name, so no friend is added). Usage: npm run smoke [-- out.png]
+// (picked from the suggestions, so no friend is added; the user's own team is put back). Usage: npm run smoke [-- out.png]
 import { chromium } from "playwright";
 import { CDP_PORT, reloadExtension } from "./browser.mjs";
 
@@ -39,27 +39,33 @@ try {
 
   const friend = await page.evaluate(async id => {
     const doc = new DOMParser().parseFromString(await (await fetch(`/user/${id}/friends/`)).text(), "text/html");
-    const a = doc.querySelector("table a[href^='/user/']");
+    const a = [...doc.querySelectorAll("table a[href^='/user/']")].find(a => /^\/user\/\d+\/?$/.test(a.getAttribute("href")));
     return a && a.textContent.trim();
   }, me.id);
   if (!friend) {
     console.log("No CSES friends; skipping the team check.");
   } else {
-    const input = page.locator("#pacha-cses-tools-ext-bar input[type=text], #pacha-cses-tools-ext-bar input:not([type])").first();
-    const before = await input.inputValue();
+    // Start from an empty team, keep the user's own to put back at the end
+    const keys = ["team", "recent-mates", "recent-teams"].map(k => `pacha-cses-tools-ext-${k}`);
+    const saved = await page.evaluate(keys => keys.map(k => localStorage.getItem(k)), keys);
+    await page.evaluate(keys => keys.forEach(k => localStorage.removeItem(k)), keys);
+    await page.reload();
+    const input = page.locator("#pacha-cses-tools-ext-mates");
+    await input.click();
     await input.fill(friend);
+    await page.waitForSelector(".suggest .option", { timeout: 15000 }).catch(() => fail("no suggestions"));
     await input.press("Enter");
-    await page.waitForSelector(".pacha-team .dot", { timeout: 15000 }).catch(() => fail(`team "${friend}" shows no dots`));
+    await page.waitForSelector(".chip.ready", { timeout: 15000 }).catch(() => fail(`team "${friend}" never loaded`));
+    await page.waitForSelector(".pacha-team .dot", { timeout: 5000 }).catch(() => fail(`team "${friend}" shows no dots`));
     if ((await page.locator("span.task-score.full").count()) !== solvedMarks) fail("team changed the user's own green checks");
     if (!/Me \d+ · Team \d+ · Nobody \d+/.test(await stat())) fail(`team stats missing: "${await stat()}"`);
     console.log(`Team "${friend}": stats "${await stat()}"`);
     if (out) await page.screenshot({ path: out });
-    await page.locator("#pacha-cses-tools-ext-bar .clear").click();
-    await page.waitForSelector(".pacha-team", { state: "detached", timeout: 5000 }).catch(() => fail("the × did not clear the team"));
-    if (before) {
-      await input.fill(before);
-      await input.press("Enter");
-    }
+    await page.locator(".chip .toggle").first().click();
+    await page.waitForSelector(".pacha-team", { state: "detached", timeout: 5000 }).catch(() => fail("hiding the only teammate left their dots"));
+    await page.locator(".chip .remove").first().click();
+    await page.waitForSelector(".pacha-team", { state: "detached", timeout: 5000 }).catch(() => fail("× did not remove the teammate"));
+    await page.evaluate(([keys, saved]) => keys.forEach((k, i) => (saved[i] == null ? localStorage.removeItem(k) : localStorage.setItem(k, saved[i]))), [keys, saved]);
   }
   if (out && !friend) await page.screenshot({ path: out });
 } catch (e) {

@@ -9,6 +9,7 @@ function ensureTopicBadges() {
     const badge = document.createElement("span");
     badge.className = "topic-badge";
     badge.textContent = row.topic;
+    badge.title = row.topic; // the column may cut long topics
     a.insertAdjacentElement("afterend", badge);
   }
 }
@@ -17,28 +18,23 @@ function applyFilterOriginal() {
   for (const row of state.data) row.li.classList.toggle("soft-hidden", !isVisible(row));
 }
 
-// Who on the team solved a task: one dot per teammate (fixed color and position, filled =
-// solved, names in the tooltip), or a count for more than 4 teammates. Null without a team.
+// Who on the team solved a task: one dot per shown teammate (fixed color by slot, filled =
+// solved, names in the tooltip). Null without a team.
 function teamMarks(row) {
-  const n = state.team.length;
-  if (!n) return null;
-  const names = state.team.filter((_, i) => row.solvedBy.has(i)).map(m => m.label);
+  const shown = state.team.filter(isShown);
+  if (!shown.length) return null;
+  const names = shown.filter(m => row.solvedBy.has(m.slot)).map(m => m.label);
   const marks = document.createElement("span");
   marks.className = "pacha-team";
   marks.title = names.length ? `Solved by ${names.join(", ")}` : "No teammate solved it";
-  if (n > 4) {
-    marks.classList.add("count");
-    marks.textContent = `${row.solvedBy.size}/${n}`;
-  } else {
-    for (let i = 0; i < n; i++) marks.append(teamDot(i, row.solvedBy.has(i)));
-  }
+  for (const m of [...shown].sort((x, y) => x.slot - y.slot)) marks.append(teamDot(m.slot, row.solvedBy.has(m.slot)));
   return marks;
 }
 
-function teamDot(i, on) {
+function teamDot(slot, on) {
   const dot = document.createElement("span");
   dot.className = `dot${on ? " on" : ""}`;
-  dot.dataset.i = i;
+  dot.dataset.i = slot;
   return dot;
 }
 

@@ -5,14 +5,20 @@ const STORAGE_KEYS = {
   hideSolved: `${ID}-hideSolved`, // legacy, migrated to `filter`
   filter: `${ID}-filter`,
   view: `${ID}-view`,
-  mates: `${ID}-team-mates`,
+  mates: `${ID}-team-mates`, // legacy comma-separated string, migrated to `team`
+  team: `${ID}-team`, // JSON [{ id, label, slot, hidden }]
+  recentTeams: `${ID}-recent-teams`, // JSON [[{ id, label }]], newest first
+  recentMates: `${ID}-recent-mates`, // JSON [{ id, label }], newest first
+  friends: `${ID}-friends`, // JSON { me, t, counts: { id: solved } }, cached friends ranking
   friendConsent: `${ID}-friend-consent`,
 };
 
 const state = {
   mode: localStorage.getItem(STORAGE_KEYS.view) === "sorted" ? "sorted" : "original", // "original" | "sorted"
   filter: localStorage.getItem(STORAGE_KEYS.filter) ?? (localStorage.getItem(STORAGE_KEYS.hideSolved) === "1" ? "me" : "all"),
-  team: [], // [{ id, label }] in the order typed; a teammate's index is their dot position
+  // Teammates in chip order: { id, label, slot, hidden, status: "loading" | "ready" | "error", set, solved }.
+  // `slot` (0-5, -1 = none) fixes the teammate's color and is kept while they stay on the team.
+  team: [],
   data: [], // one row per task, built by extractAll()
 };
 
@@ -73,7 +79,7 @@ function extractAll() {
         url: a.href || new URL(a.getAttribute("href"), location.origin).href,
         taskId: taskIdFromUrl(a.getAttribute("href")),
         solved, // by the logged-in user (CSES's own green check; never changed)
-        solvedBy: new Set(), // indices into state.team of teammates who solved it
+        solvedBy: new Set(), // slots of the shown teammates who solved it (recomputeSolvedBy in team.js)
         solvedCount,
         totalCount,
       });

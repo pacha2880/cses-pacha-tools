@@ -32,15 +32,63 @@ style.textContent = `
   #${ID}-bar .stat { margin-left: auto; opacity: .75; }
 
   #${ID}-bar .team label { font-weight: bold; }
-  #${ID}-bar .mates { position: relative; flex: 1; display: flex; min-width: 12em; }
-  #${ID}-bar .mates input { flex: 1; padding: 0.2em 1.8em 0.2em 0.4em; background: transparent; }
-  #${ID}-bar .mates .clear {
-    position: absolute; right: 2px; top: 50%; transform: translateY(-50%);
-    border: 0; background: none; box-shadow: none; color: inherit; opacity: .6;
-    padding: 0 0.4em; font-size: 1.1em; line-height: 1;
+
+  /* Team field: looks like a CSES text input holding chips + a borderless input */
+  #${ID}-bar .team .combo { position: relative; flex: 1; min-width: 14em; white-space: normal; }
+  #${ID}-bar .team .field {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
+    padding: 3px 4px; border: 1px solid gray; border-radius: 3px; cursor: text;
+    max-height: 4.6em; overflow-y: auto;
   }
-  #${ID}-bar .mates .clear:hover { opacity: 1; }
-  #${ID}-bar .mates input:placeholder-shown + .clear { display: none; }
+  #${ID}-bar .team .field:focus-within { outline: 2px solid #4a90d9; outline-offset: -1px; }
+  #${ID}-bar .chips { display: contents; }
+  #${ID}-bar .field input {
+    flex: 1; min-width: 8em; border: 0; outline: 0; box-shadow: none; background: transparent;
+    color: inherit; font: inherit; padding: 1px 2px; margin: 0;
+  }
+
+  #${ID}-bar .chip {
+    display: inline-flex; align-items: center; border-radius: 3px; line-height: 1.5;
+    background: rgba(128,128,128,.15); border: 1px solid rgba(128,128,128,.4);
+  }
+  #${ID}-bar .chip button, #${ID}-bar .chip button:focus {
+    border: 0; box-shadow: none; background: none; color: inherit; font: inherit;
+    margin: 0; cursor: pointer; min-height: 0;
+  }
+  #${ID}-bar .chip .toggle, #${ID}-bar .chip .toggle:focus { display: inline-flex; align-items: center; gap: 5px; padding: 0 2px 0 6px; }
+  #${ID}-bar .chip .remove, #${ID}-bar .chip .remove:focus { padding: 0 6px 0 3px; opacity: .6; font-size: 1.1em; line-height: 1; }
+  #${ID}-bar .chip .remove:hover { opacity: 1; }
+  #${ID}-bar .chip button:focus-visible { outline: 2px solid #4a90d9; outline-offset: -2px; border-radius: 3px; }
+  #${ID}-bar .chip.off .toggle { opacity: .5; }
+  #${ID}-bar .chip.error { border-color: #d33; }
+  #${ID}-bar .chip.error .toggle { cursor: default; }
+  #${ID}-bar .chip .warn::before { font-family: 'Font Awesome 5 Free'; font-weight: 900; content: '\\f071'; color: #d33; font-size: .85em; }
+  #${ID}-bar .chip.flash { animation: ${ID}-flash .6s; }
+  @keyframes ${ID}-flash { 50% { background: rgba(74,144,217,.45); } }
+  #${ID}-bar .spinner {
+    width: 0.65em; height: 0.65em; border-radius: 50%; box-sizing: border-box;
+    border: 2px solid currentColor; border-right-color: transparent; opacity: .6;
+    animation: ${ID}-spin .8s linear infinite;
+  }
+  @keyframes ${ID}-spin { to { transform: rotate(360deg); } }
+
+  /* Suggestions under the field; background copied from <body> in ui.js */
+  #${ID}-bar .suggest {
+    position: absolute; left: -1px; right: -1px; top: 100%; z-index: 10000;
+    margin: 2px 0 0; padding: 2px 0; list-style: none;
+    border: 1px solid gray; border-radius: 3px; box-shadow: 0 4px 12px rgba(0,0,0,.25);
+  }
+  #${ID}-bar .suggest[hidden] { display: none; }
+  #${ID}-bar .option { display: flex; align-items: center; gap: 12px; padding: 3px 8px; cursor: pointer; white-space: nowrap; }
+  #${ID}-bar .option[aria-selected="true"] { background: rgba(74,144,217,.25); }
+  #${ID}-bar .option .name { overflow: hidden; text-overflow: ellipsis; }
+  #${ID}-bar .option .name b { font-weight: bold; }
+  #${ID}-bar .option .meta { margin-left: auto; opacity: .65; font-size: .9em; }
+  #${ID}-bar .option .forget { border: 0; box-shadow: none; background: none; color: inherit; padding: 0 4px; opacity: .6; }
+  #${ID}-bar .option .forget:hover { opacity: 1; }
+  #${ID}-bar .option.lookup { border-top: 1px solid rgba(128,128,128,.3); }
+
+  #${ID}-bar .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
   #${ID}-bar .team-msg:empty { display: none; }
   #${ID}-bar .team-msg { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -48,11 +96,9 @@ style.textContent = `
 
   #${ID}-bar select { font: inherit; color: inherit; background: transparent; border: 1px solid gray; border-radius: 3px; padding: 0.15em 0.3em; }
   #${ID}-bar select option { color: initial; }
-  #${ID}-bar .legend { display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 
   /* Team marks: one dot per teammate, fixed color and position; filled = solved */
   .pacha-team { display: inline-flex; gap: 3px; margin-left: 8px; vertical-align: middle; }
-  .pacha-team.count { font-size: 0.85em; opacity: .8; }
   .pacha-team .dot, #${ID}-bar .dot {
     display: inline-block; width: 0.65em; height: 0.65em; border-radius: 50%; box-sizing: border-box;
     border: 2px solid var(--c); opacity: .9;
@@ -63,11 +109,27 @@ style.textContent = `
   .dot[data-i="1"] { --c: #f59e0b; }
   .dot[data-i="2"] { --c: #d946ef; }
   .dot[data-i="3"] { --c: #14b8a6; }
+  .dot[data-i="4"] { --c: #e11d48; }
+  .dot[data-i="5"] { --c: #8b5cf6; }
 
 
+  /* "By solves" list, easier to scan: the topic is a quiet fixed-width column with one left
+     edge (alignment, proximity), the solves are right-aligned tabular numbers (the sort key),
+     and secondary text is muted rather than boxed (hierarchy). Colors come from currentColor,
+     so both CSES themes work. */
+  #${ID}-sorted > li { align-items: baseline; }
+  #${ID}-sorted > li > :first-child, #${ID}-sorted .task-score { align-self: stretch; }
+  #${ID}-sorted > li:hover { background-color: rgba(128,128,128,.14); }
+  #${ID}-sorted > li > a { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #${ID}-sorted .pacha-team { flex: none; margin-left: .5em; }
   .topic-badge {
-    display: inline-block; padding: 0 6px; border-radius: 3px; font-size: 0.75em; margin-left: 8px; vertical-align: middle; opacity: .85;
-    background: rgba(128,128,128,.15); border: 1px solid rgba(128,128,128,.4);
+    flex: 0 0 13.5em; margin-left: 1.5em; font-size: .8em;
+    opacity: .65; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  #${ID}-sorted > li:hover .topic-badge { opacity: .85; }
+  #${ID}-sorted .detail {
+    flex: 0 0 7.5em; margin-left: .5em; padding-right: .75em; text-align: right;
+    font-variant-numeric: tabular-nums lining-nums; opacity: .75;
   }
   .soft-hidden { display: none !important; }
   .hide-topic-badge .topic-badge { display: none !important; }

@@ -14,6 +14,9 @@ export function pack() {
   for (const cs of manifest.content_scripts ?? []) {
     for (const f of [...(cs.css ?? []), ...(cs.js ?? [])]) files.add(f);
   }
+  for (const war of manifest.web_accessible_resources ?? []) {
+    for (const f of war.resources ?? []) files.add(f);
+  }
   for (const f of files) {
     if (!existsSync(f)) throw new Error(`manifest.json references missing file: ${f}`);
   }

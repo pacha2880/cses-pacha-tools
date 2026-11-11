@@ -2,13 +2,38 @@
   "manifest_version": 3,
   "name": "CSES Pacha Tools – Sort and Filter",
   "description": "Sort CSES problems by number of solves, filter out what you or your team solved, and see each teammate's progress.",
-  "version": "1.2.6",
-  "icons": { "16": "icons/icon16.png", "48": "icons/icon48.png", "128": "icons/icon128.png" },
+  "version": "1.2.7",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
   "content_scripts": [
     {
-      "matches": ["https://cses.fi/problemset*"],
-      "js": ["src/core.js", "src/styles.js", "src/views.js", "src/team.js", "src/ui.js", "src/main.js"],
+      "matches": [
+        "https://cses.fi/problemset*"
+      ],
+      "js": [
+        "src/core.js",
+        "src/styles.js",
+        "src/views.js",
+        "src/users.js",
+        "src/team.js",
+        "src/ui.js",
+        "src/chips.js",
+        "src/main.js"
+      ],
       "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "data/users.txt"
+      ],
+      "matches": [
+        "https://cses.fi/*"
+      ]
     }
   ]
 }

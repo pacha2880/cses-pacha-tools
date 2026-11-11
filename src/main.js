@@ -9,6 +9,7 @@ function initOnce() {
   ensureTopicBadges();
   renderBar();
   setView(state.mode);
+  restoreTeam();
   return true;
 }
 

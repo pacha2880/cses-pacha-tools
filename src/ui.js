@@ -1,5 +1,5 @@
 // Toolbar injected above the first <h2>, and its handlers.
-// Row 1: view switch + filter + stats. Row 2: team box.
+// Row 1: view switch + filter + stats. Row 2: team field (chips + suggestions, chips.js).
 
 function el(tag, props = {}, ...children) {
   const node = Object.assign(document.createElement(tag), props);
@@ -12,10 +12,11 @@ function updateStats() {
   if (!stat) return;
   const shown = `Showing ${state.data.filter(isVisible).length}/${state.data.length}`;
   const me = state.data.filter(d => d.solved).length;
-  if (!state.team.length) return (stat.textContent = `${shown} · Solved ${me}`);
+  if (!state.team.some(isShown)) return (stat.textContent = `${shown} · Solved ${me}`);
   const team = state.data.filter(d => d.solvedBy.size).length;
   const nobody = state.data.filter(d => !d.solved && !d.solvedBy.size).length;
-  stat.textContent = `${shown} · Me ${me} · Team ${team} · Nobody ${nobody}`;
+  const hidden = state.team.filter(m => m.hidden).length;
+  stat.textContent = `${shown} · Me ${me} · Team ${team}${hidden ? ` (${hidden} hidden)` : ""} · Nobody ${nobody}`;
 }
 
 function setView(mode) {
@@ -59,45 +60,27 @@ function renderBar() {
     }
   };
 
-  const mates = el("input", {
-    type: "text",
-    placeholder: "Teammate IDs or usernames, comma-separated",
-    value: localStorage.getItem(STORAGE_KEYS.mates) || "",
-  });
-  const clear = el("button", { type: "button", className: "clear", textContent: "×", title: "Clear team" });
-  const team = el("form", { className: "row team" },
-    el("label", { textContent: "Team", htmlFor: `${ID}-mates` }),
-    el("span", { className: "mates" }, mates, clear),
-    el("button", { type: "submit", textContent: "Apply" }),
-  );
-  mates.id = `${ID}-mates`;
-  // Enter or the button applies the box; an empty box clears the team.
-  team.onsubmit = e => {
-    e.preventDefault();
-    const raw = mates.value.trim();
-    localStorage.setItem(STORAGE_KEYS.mates, raw);
-    runTeam(raw);
-  };
-  clear.onclick = () => {
-    mates.value = "";
-    team.requestSubmit();
-    mates.focus();
-  };
-
-  const msg = el("div", { className: "team-msg", role: "status" });
+  const team = teamField();
+  const msg = el("div", { className: "team-msg" });
+  const live = el("span", { className: "sr-only", ariaLive: "polite" });
 
   const bar = el("div", { id: `${ID}-bar` },
     el("div", { className: "row" },
       viewSwitch,
       filter,
-      el("span", { className: "stat", role: "status" }),
+      el("span", { className: "stat" }),
     ),
     team,
     msg,
+    live,
   );
 
   matchPageBackground(bar);
-  document.addEventListener("theme-changed", () => matchPageBackground(bar));
+  matchPageBackground($(".suggest", bar));
+  document.addEventListener("theme-changed", () => {
+    matchPageBackground(bar);
+    matchPageBackground($(".suggest", bar));
+  });
 
   const firstH2 = $("h2");
   if (firstH2) firstH2.parentElement.insertBefore(bar, firstH2);
@@ -116,14 +99,10 @@ function teamMessage(text, kind = "") {
   msg.className = `team-msg ${kind}`;
 }
 
-// Progress text in the stats area while the team loads; refresh() puts the stats back.
-function teamProgress(text) {
-  const stat = $(`#${ID}-bar .stat`);
-  if (stat) stat.textContent = text;
-}
-
-function setTeamBusy(busy) {
-  for (const btn of $$(`#${ID}-bar .team button`)) btn.disabled = busy;
+// Screen-reader announcement (polite)
+function announce(text) {
+  const live = $(`#${ID}-bar .sr-only`);
+  if (live) live.textContent = text;
 }
 
 // Asks a yes/no question inline; resolves true if the user confirms.
@@ -140,10 +119,4 @@ function askTeam(question, yesLabel) {
     msg.replaceChildren(el("span", { textContent: question }), yes, no);
     yes.focus();
   });
-}
-
-// "Team: ● Ann ● Bob": which dot is whom
-function teamLegend() {
-  return el("span", { className: "legend" }, "Team:",
-    ...state.team.map((m, i) => el("span", {}, state.team.length <= 4 ? teamDot(i, true) : "", ` ${m.label}`)));
 }

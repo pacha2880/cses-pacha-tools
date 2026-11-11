@@ -1,12 +1,25 @@
-// Team: which of the given teammates solved each task, kept apart from the user's own
+// Team: teammates (state.team) and which tasks each solved, kept apart from the user's own
 // status (row.solvedBy next to row.solved; CSES's green check is never touched).
-// UI feedback goes through teamMessage() / teamProgress() / setTeamBusy() from ui.js.
+// The chips UI (ui.js) calls addMember / removeMember / toggleHidden / useTeam.
 
-const myUserId = () => userIdFromUrl($(".controls a.account[href*='/user/']")?.getAttribute("href"));
+const SLOTS = 6; // dot colors in styles.js
+const SOLVED_TTL = 30 * 60 * 1000; // solved sets cached in sessionStorage this long
+
+const readJson = (key, fallback) => {
+  try {
+    return JSON.parse(localStorage.getItem(key)) ?? fallback;
+  } catch {
+    return fallback;
+  }
+};
 
 // Set of taskIds fully solved by a user, scraped from /problemset/user/<id>/; null if that
-// page has no statistics (unknown id, or logged out).
+// page has no statistics (unknown id, or logged out). Cached per tab session.
 async function fetchSolvedSet(userId) {
+  const key = `${ID}-solved-${userId}`;
+  const cached = JSON.parse(sessionStorage.getItem(key) || "null");
+  if (cached && Date.now() - cached.t < SOLVED_TTL) return new Set(cached.ids);
+
   const doc = await fetchDoc(`/problemset/user/${encodeURIComponent(userId)}/`);
   if (!doc || !$("table.course-user-solved", doc)) return null;
   const set = new Set();
@@ -14,21 +27,36 @@ async function fetchSolvedSet(userId) {
     const id = taskIdFromUrl(a.getAttribute("href"));
     if (id) set.add(id);
   }
+  sessionStorage.setItem(key, JSON.stringify({ t: Date.now(), ids: [...set] }));
   return set;
 }
 
-// name (lowercase) -> user id, from the logged-in user's CSES friends page
-function friendsFrom(doc) {
-  const map = new Map();
-  // Only profile links (/user/<id>/), not the "remove" links (/user/<me>/friends/remove/<id>)
-  for (const a of $$("table a[href^='/user/']", doc).filter(a => /^\/user\/\d+\/?$/.test(a.getAttribute("href")))) map.set(a.textContent.trim().toLowerCase(), userIdFromUrl(a.getAttribute("href")));
-  return map;
+// At most two user pages loading at a time
+const loadQueue = [];
+let loading = 0;
+function queueLoad(fn) {
+  return new Promise((resolve, reject) => {
+    loadQueue.push(() => fn().then(resolve, reject));
+    pumpLoads();
+  });
+}
+function pumpLoads() {
+  while (loading < 2 && loadQueue.length) {
+    loading++;
+    loadQueue.shift()().finally(() => {
+      loading--;
+      pumpLoads();
+    });
+  }
 }
 
-// Adds `names` as CSES friends of the logged-in user (the only way to look up a username's id).
-async function addFriends(friendsUrl, doc, names) {
+// Adds `names` as CSES friends of the logged-in user (the only way to look up a username's id
+// when it is not in data/users.txt).
+async function addFriends(names) {
+  const friendsUrl = `/user/${myUserId()}/friends/`;
+  let doc = await fetchDoc(friendsUrl);
   for (const name of names) {
-    const token = $("input[name='csrf_token']", doc)?.value;
+    const token = doc && $("input[name='csrf_token']", doc)?.value;
     if (!token) return;
     await fetch(friendsUrl, {
       method: "POST",
@@ -40,85 +68,155 @@ async function addFriends(friendsUrl, doc, names) {
   }
 }
 
-// Resolves numeric ids and usernames to { id, label }. Usernames that are not CSES friends yet
-// are added as friends, after asking the user once. Returns { ids, notFound } or null if cancelled.
-async function resolveTeam(entries) {
-  const ids = [], notFound = [];
-  const names = entries.filter(e => !/^\d+$/.test(e));
-  ids.push(...entries.filter(e => /^\d+$/.test(e)).map(id => ({ id, label: id })));
-  if (!names.length) return { ids, notFound };
-
-  const friendsUrl = `/user/${myUserId()}/friends/`;
-  let doc = await fetchDoc(friendsUrl);
-  if (!doc) return { ids, notFound: notFound.concat(names) };
-  let friends = friendsFrom(doc);
-
-  const missing = names.filter(n => !friends.has(n.toLowerCase()));
-  if (missing.length) {
-    if (localStorage.getItem(STORAGE_KEYS.friendConsent) !== "1") {
-      const ok = await askTeam(
-        `Usernames are looked up through your CSES friends list. Add ${missing.join(", ")} as ${missing.length > 1 ? "friends" : "a friend"}?`,
-        missing.length > 1 ? "Add as friends" : "Add as friend",
-      );
-      if (!ok) return null;
-      localStorage.setItem(STORAGE_KEYS.friendConsent, "1");
-    }
-    await addFriends(friendsUrl, doc, missing);
-    doc = await fetchDoc(friendsUrl);
-    if (doc) friends = friendsFrom(doc);
-  }
-  for (const n of names) {
-    const id = friends.get(n.toLowerCase());
-    if (id) ids.push({ id, label: n });
-    else notFound.push(n);
-  }
-  return { ids, notFound };
+// Resolves a typed name to { id, label }: numeric id, data/users.txt, CSES friends. Null if unknown.
+async function resolveName(text) {
+  if (/^\d+$/.test(text)) return { id: text, label: text };
+  const user = findUser(await loadUsers(), text);
+  if (user) return user;
+  return (await loadFriends()).find(f => f.label.toLowerCase() === text.toLowerCase()) ?? null;
 }
 
+// Looks a name up by adding it as a CSES friend; asks once (consent remembered).
+// Returns { id, label }, null if not found, or "cancelled".
+async function lookUpViaFriends(name) {
+  if (!myUserId()) return null;
+  if (localStorage.getItem(STORAGE_KEYS.friendConsent) !== "1") {
+    const ok = await askTeam(`CSES only reveals ${name}'s user ID through your friends list. Add ${name} as a CSES friend?`, "Add as friend");
+    if (!ok) return "cancelled";
+    localStorage.setItem(STORAGE_KEYS.friendConsent, "1");
+  }
+  await addFriends([name]);
+  const friends = await loadFriends(true);
+  return friends.find(f => f.label.toLowerCase() === name.toLowerCase()) ?? null;
+}
 
-// Records the team and, for every task, which of its members solved it
-function setTeam(members, sets) {
-  state.team = members;
+// --- Team state ---
+
+const isShown = m => m.status === "ready" && !m.hidden;
+
+// row.solvedBy = slots of the shown teammates who solved each task (slots are unique: at most
+// SLOTS teammates)
+function recomputeSolvedBy() {
+  const shown = state.team.filter(isShown);
   for (const row of state.data) {
-    row.solvedBy = new Set(sets.flatMap((set, i) => (set.has(row.taskId) ? [i] : [])));
+    row.solvedBy = new Set(shown.filter(m => m.set.has(row.taskId)).map(m => m.slot));
   }
 }
 
-// `raw` is the comma-separated input; an empty one clears the team.
-async function runTeam(raw) {
-  const entries = [...new Set(raw.split(",").map(s => s.trim()).filter(Boolean))];
-  teamMessage("");
-  if (!entries.length) {
-    setTeam([], []);
-    return refresh();
+function freeSlot() {
+  const used = new Set(state.team.map(m => m.slot));
+  for (let s = 0; s < SLOTS; s++) if (!used.has(s)) return s;
+  return -1;
+}
+
+let refreshPending = false;
+// Re-renders once per frame, however many teammates arrive at once
+function teamChanged() {
+  saveTeam();
+  renderChips();
+  if (refreshPending) return;
+  refreshPending = true;
+  requestAnimationFrame(() => {
+    refreshPending = false;
+    recomputeSolvedBy();
+    refresh();
+  });
+}
+
+function saveTeam() {
+  localStorage.setItem(STORAGE_KEYS.team, JSON.stringify(state.team.map(({ id, label, slot, hidden }) => ({ id, label, slot, hidden }))));
+  rememberTeamSoon();
+}
+
+// Adds a resolved user ({ id, label }) and loads what they solved.
+// Returns "added", "duplicate" or "full" (one color per teammate, SLOTS colors).
+function addMember(user, { hidden = false, slot = freeSlot() } = {}) {
+  if (state.team.some(m => m.id === user.id)) return "duplicate";
+  if (slot < 0) return "full";
+  const member = { id: user.id, label: user.label, slot, hidden, status: "loading", set: new Set(), solved: null };
+  state.team.push(member);
+  rememberMate(user);
+  teamChanged();
+  queueLoad(() => fetchSolvedSet(member.id))
+    .then(set => {
+      if (!state.team.includes(member)) return; // removed while loading
+      if (set) Object.assign(member, { status: "ready", set, solved: set.size });
+      else member.status = "error";
+      announce(set ? `${member.label}: ${set.size} solved` : `${member.label}: not found on CSES`);
+      teamChanged();
+    })
+    .catch(e => {
+      console.error(e);
+      if (!state.team.includes(member)) return;
+      member.status = "error";
+      teamChanged();
+    });
+  return "added";
+}
+
+function removeMember(member) {
+  if (!state.team.includes(member)) return;
+  state.team = state.team.filter(m => m !== member);
+  announce(`${member.label} removed`);
+  teamChanged();
+}
+
+function toggleHidden(member) {
+  member.hidden = !member.hidden;
+  announce(`${member.label} ${member.hidden ? "hidden" : "shown"}`);
+  teamChanged();
+}
+
+// Replaces the team (a recent team picked from the suggestions)
+function useTeam(users) {
+  state.team = [];
+  for (const u of users) addMember(u);
+  teamChanged();
+}
+
+// --- History: recent teammates and recent teams (offered in the suggestions) ---
+
+function rememberMate(user) {
+  const mates = readJson(STORAGE_KEYS.recentMates, []).filter(m => m.id !== user.id);
+  localStorage.setItem(STORAGE_KEYS.recentMates, JSON.stringify([{ id: user.id, label: user.label }, ...mates].slice(0, 20)));
+}
+
+const teamKey = users => users.map(u => u.id).sort().join(",");
+
+// A team of 2+ kept unchanged for 10 s becomes a recent team
+let rememberTimer = 0;
+function rememberTeamSoon() {
+  clearTimeout(rememberTimer);
+  rememberTimer = setTimeout(() => {
+    const users = state.team.filter(m => m.status !== "error").map(({ id, label }) => ({ id, label }));
+    if (users.length < 2) return;
+    const teams = readJson(STORAGE_KEYS.recentTeams, []).filter(t => teamKey(t) !== teamKey(users));
+    localStorage.setItem(STORAGE_KEYS.recentTeams, JSON.stringify([users, ...teams].slice(0, 5)));
+  }, 10000);
+}
+
+function forgetTeam(users) {
+  const teams = readJson(STORAGE_KEYS.recentTeams, []).filter(t => teamKey(t) !== teamKey(users));
+  localStorage.setItem(STORAGE_KEYS.recentTeams, JSON.stringify(teams));
+}
+
+// Restores the saved team on page load (migrating the old comma-separated box once).
+async function restoreTeam() {
+  let saved = readJson(STORAGE_KEYS.team, null);
+  const legacy = localStorage.getItem(STORAGE_KEYS.mates);
+  if (!myUserId()) {
+    if (saved?.length || legacy) teamMessage("Log in to CSES to see your team.", "error");
+    return;
   }
-  if (!myUserId()) return teamMessage("Log in to CSES to use Team.", "error");
-
-  setTeamBusy(true);
-  try {
-    teamProgress("Looking up teammates…");
-    const team = await resolveTeam(entries);
-    if (!team) return teamMessage("");
-
-    const members = [], sets = [];
-    for (const [i, m] of team.ids.entries()) {
-      teamProgress(`Loading ${i + 1}/${team.ids.length}…`);
-      const set = await fetchSolvedSet(m.id);
-      if (set) members.push(m), sets.push(set);
-      else team.notFound.push(m.label);
+  if (!saved && legacy) {
+    saved = [];
+    let all = true;
+    for (const name of legacy.split(",").map(s => s.trim()).filter(Boolean)) {
+      const user = await resolveName(name);
+      if (!user) all = false;
+      else if (!saved.some(s => s.id === user.id)) saved.push(user);
     }
-
-    setTeam(members, sets);
-    refresh();
-    const legend = members.length ? teamLegend() : "";
-    if (team.notFound.length) {
-      teamMessage(el("span", {}, legend, `${legend ? " · " : ""}Not found: ${team.notFound.join(", ")}`), "error");
-    } else teamMessage(legend);
-  } catch (e) {
-    console.error(e);
-    teamMessage("Couldn't load the team from CSES. Try again.", "error");
-    refresh();
-  } finally {
-    setTeamBusy(false);
+    if (all) localStorage.removeItem(STORAGE_KEYS.mates); // else retried on the next visit
   }
+  for (const m of saved ?? []) addMember(m, { hidden: !!m.hidden, slot: Number.isInteger(m.slot) && !state.team.some(t => t.slot === m.slot) ? m.slot : freeSlot() });
 }

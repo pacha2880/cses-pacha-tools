@@ -21,11 +21,11 @@ Practice the CSES Problem Set (cses.fi/problemset) more efficiently. CSES Pacha 
 Features
 • By topic | By solves: switch between CSES's usual topic lists and one list of all 400 tasks sorted by how many people solved them, so you can pick the most approachable problem next. Your choice is remembered.
 • Filter: show all, hide what you solved, hide what anyone on your team solved, or only what your team solved and you didn't (ask them!).
-• Team: type your teammates' CSES user IDs or usernames (comma-separated). Each problem gets one colored dot per teammate (filled = solved), and the counts show "Me 221 · Team 243 · Nobody 157". Your own green checks stay yours. Press Enter to apply; clear the box (or its ×) to remove the team.
+• Team: start typing a teammate's name and pick them from the suggestions (your CSES friends, recent teammates and teams, and every CSES user with 5+ solved tasks). Each problem gets one colored dot per teammate (filled = solved), and the counts show "Me 221 · Team 243 · Nobody 157". Click a teammate's chip to hide them for a moment, × to remove. Your own green checks stay yours.
 
 Notes
 • The team feature needs you to be logged in to CSES, because CSES only shows other users' statistics to logged-in users.
-• Usernames are resolved through your CSES friends list: if a teammate is not your CSES friend yet, the extension adds them as a friend to look up their user ID. Use numeric user IDs to avoid this.
+• Users missing from the bundled list (new accounts) can be looked up through your CSES friends list: the extension asks, then adds them as a CSES friend to find their user ID. Numeric user IDs always work.
 
 Privacy
 • No data collection, no analytics, no remote code. Settings are stored locally in your browser. The extension only talks to cses.fi, with your existing session.
