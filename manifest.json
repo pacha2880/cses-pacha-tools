@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "CSES Pacha Tools – Sort and Filter",
-  "description": "Sort CSES problems by number of solves, filter out what you or your team solved, and see each teammate's progress.",
-  "version": "1.2.14",
+  "description": "Stalk your friends' CSES progress 👀 and find the easiest problems you haven't solved yet.",
+  "version": "1.2.15",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
